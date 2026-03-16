@@ -75,6 +75,9 @@ const PAD_RIGHT  = 8;
 // Current raw input pressure for the live indicator dot (null = hidden)
 let livePressure = null;
 
+// Whether interior grid lines are drawn
+let showGrid = true;
+
 // Resize the curve canvas to fill the panel width (keeping it square)
 function resizeCurveCanvas() {
   const size = Math.max(160, curvePanel.clientWidth - 24); // 12px padding each side
@@ -99,19 +102,21 @@ function drawCurveCanvas() {
   curveCtx.fillRect(0, 0, W, H);
 
   // Grid lines
-  curveCtx.strokeStyle = '#ebebf4';
-  curveCtx.lineWidth = 1;
-  for (let i = 0; i <= 5; i++) {
-    const gx = PAD_LEFT + (i / 5) * plotW;
-    const gy = PAD_TOP  + (i / 5) * plotH;
-    curveCtx.beginPath();
-    curveCtx.moveTo(gx, PAD_TOP);
-    curveCtx.lineTo(gx, PAD_TOP + plotH);
-    curveCtx.stroke();
-    curveCtx.beginPath();
-    curveCtx.moveTo(PAD_LEFT, gy);
-    curveCtx.lineTo(PAD_LEFT + plotW, gy);
-    curveCtx.stroke();
+  if (showGrid) {
+    curveCtx.strokeStyle = '#ebebf4';
+    curveCtx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const gx = PAD_LEFT + (i / 5) * plotW;
+      const gy = PAD_TOP  + (i / 5) * plotH;
+      curveCtx.beginPath();
+      curveCtx.moveTo(gx, PAD_TOP);
+      curveCtx.lineTo(gx, PAD_TOP + plotH);
+      curveCtx.stroke();
+      curveCtx.beginPath();
+      curveCtx.moveTo(PAD_LEFT, gy);
+      curveCtx.lineTo(PAD_LEFT + plotW, gy);
+      curveCtx.stroke();
+    }
   }
 
   // Plot border
@@ -143,14 +148,6 @@ function drawCurveCanvas() {
   curveCtx.textAlign    = 'center';
   curveCtx.textBaseline = 'bottom';
   curveCtx.fillText('Input Pressure', PAD_LEFT + plotW / 2, H - 1);
-
-  // Diagonal reference (linear / identity)
-  curveCtx.strokeStyle = '#dcdce8';
-  curveCtx.lineWidth   = 1;
-  curveCtx.beginPath();
-  curveCtx.moveTo(PAD_LEFT,          PAD_TOP + plotH);
-  curveCtx.lineTo(PAD_LEFT + plotW,  PAD_TOP);
-  curveCtx.stroke();
 
   // The pressure curve
   curveCtx.strokeStyle = '#3366ee';
@@ -489,6 +486,11 @@ document.getElementById('btn-reset').addEventListener('click', () => {
 });
 
 document.getElementById('btn-clear').addEventListener('click', clearDrawCanvas);
+
+document.getElementById('chk-grid').addEventListener('change', (e) => {
+  showGrid = e.target.checked;
+  drawCurveCanvas();
+});
 
 
 // ── Keyboard shortcuts ────────────────────────────────────────

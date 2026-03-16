@@ -89,6 +89,21 @@ input[type="range"] {
 }
 
 
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-row input[type="checkbox"] {
+  accent-color: #3366ee;
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+
 #btn-reset {
   margin-top: 2px;
   padding: 6px 10px;
