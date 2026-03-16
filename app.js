@@ -92,11 +92,11 @@ function drawCurveCanvas() {
   const plotH = H - PAD_TOP  - PAD_BOTTOM;
 
   // Background
-  curveCtx.fillStyle = '#13131f';
+  curveCtx.fillStyle = '#ffffff';
   curveCtx.fillRect(0, 0, W, H);
 
   // Grid lines
-  curveCtx.strokeStyle = '#1e1e30';
+  curveCtx.strokeStyle = '#ebebf4';
   curveCtx.lineWidth = 1;
   for (let i = 0; i <= 5; i++) {
     const gx = PAD_LEFT + (i / 5) * plotW;
@@ -112,12 +112,12 @@ function drawCurveCanvas() {
   }
 
   // Plot border
-  curveCtx.strokeStyle = '#3a3a55';
+  curveCtx.strokeStyle = '#c8c8d8';
   curveCtx.lineWidth = 1;
   curveCtx.strokeRect(PAD_LEFT, PAD_TOP, plotW, plotH);
 
   // Axis tick labels
-  curveCtx.fillStyle = '#555570';
+  curveCtx.fillStyle = '#9999aa';
   curveCtx.font = '9px Consolas, monospace';
 
   curveCtx.textAlign    = 'center';
@@ -135,14 +135,14 @@ function drawCurveCanvas() {
   }
 
   // Axis labels
-  curveCtx.fillStyle    = '#44445a';
+  curveCtx.fillStyle    = '#aaaabc';
   curveCtx.font         = '9px Segoe UI, sans-serif';
   curveCtx.textAlign    = 'center';
   curveCtx.textBaseline = 'bottom';
   curveCtx.fillText('Input Pressure', PAD_LEFT + plotW / 2, H - 1);
 
   // Diagonal reference (linear / identity)
-  curveCtx.strokeStyle = '#2a2a40';
+  curveCtx.strokeStyle = '#dcdce8';
   curveCtx.lineWidth   = 1;
   curveCtx.beginPath();
   curveCtx.moveTo(PAD_LEFT,          PAD_TOP + plotH);
@@ -150,7 +150,7 @@ function drawCurveCanvas() {
   curveCtx.stroke();
 
   // The pressure curve
-  curveCtx.strokeStyle = '#89b4fa';
+  curveCtx.strokeStyle = '#3366ee';
   curveCtx.lineWidth   = 2;
   curveCtx.lineJoin    = 'round';
   curveCtx.beginPath();
@@ -171,7 +171,7 @@ function drawCurveCanvas() {
     const dotX   = PAD_LEFT + Math.min(livePressure, 1) * plotW;
     const dotY   = PAD_TOP  + plotH - Math.min(mapped, 1) * plotH;
 
-    curveCtx.strokeStyle = 'rgba(243, 139, 168, 0.3)';
+    curveCtx.strokeStyle = 'rgba(200, 50, 80, 0.2)';
     curveCtx.lineWidth   = 1;
     curveCtx.setLineDash([3, 4]);
     curveCtx.beginPath();
@@ -182,7 +182,7 @@ function drawCurveCanvas() {
     curveCtx.stroke();
     curveCtx.setLineDash([]);
 
-    curveCtx.fillStyle = '#f38ba8';
+    curveCtx.fillStyle = '#cc3355';
     curveCtx.beginPath();
     curveCtx.arc(dotX, dotY, 4, 0, Math.PI * 2);
     curveCtx.fill();
