@@ -19,9 +19,11 @@
 // ── Parameters ───────────────────────────────────────────────
 
 const DEFAULT_PARAMS = {
-  softness: 0.0,
-  minimum:  0,
-  maximum:  1,
+  softness:     0.0,
+  inputMinimum: 0,
+  inputMaximum: 1,
+  minimum:      0,
+  maximum:      1,
 };
 
 const params = { ...DEFAULT_PARAMS };
@@ -41,10 +43,14 @@ const params = { ...DEFAULT_PARAMS };
 // then clamped to [minimum/100, maximum/100]
 
 function applyPressureCurve(x) {
-  const { minimum, maximum } = params;
+  const { inputMinimum, inputMaximum, minimum, maximum } = params;
 
-  // Linear curve: output = input, clamped to [minimum, maximum]
-  return Math.min(Math.max(minimum, x), maximum);
+  // Remap x from [inputMinimum, inputMaximum] to [0, 1]
+  const inRange = inputMaximum - inputMinimum;
+  const xNorm   = inRange > 0 ? Math.min(1, Math.max(0, (x - inputMinimum) / inRange)) : 0;
+
+  // Map normalised input to output range (linear curve for now)
+  return minimum + xNorm * (maximum - minimum);
 }
 
 
@@ -156,6 +162,34 @@ function drawCurveCanvas() {
   }
   curveCtx.stroke();
 
+  // InputMinimum / InputMaximum draggable nodes on X-axis
+  const inputNodeYMap   = { inputMinimum: PAD_TOP + plotH, inputMaximum: PAD_TOP };
+  const inputNodeColors = { inputMinimum: '#e06060', inputMaximum: '#3377dd' };
+  for (const key of ['inputMinimum', 'inputMaximum']) {
+    const val  = params[key];
+    const nx   = PAD_LEFT + val * plotW;
+    const ny   = inputNodeYMap[key];
+
+    // Vertical dashed reference line across plot
+    curveCtx.strokeStyle = key === 'inputMinimum' ? 'rgba(220,80,80,0.25)' : 'rgba(50,100,220,0.25)';
+    curveCtx.lineWidth   = 1;
+    curveCtx.setLineDash([3, 4]);
+    curveCtx.beginPath();
+    curveCtx.moveTo(nx, PAD_TOP);
+    curveCtx.lineTo(nx, PAD_TOP + plotH);
+    curveCtx.stroke();
+    curveCtx.setLineDash([]);
+
+    // Node circle
+    curveCtx.fillStyle = inputNodeColors[key];
+    curveCtx.beginPath();
+    curveCtx.arc(nx, ny, 6, 0, Math.PI * 2);
+    curveCtx.fill();
+    curveCtx.strokeStyle = '#ffffff';
+    curveCtx.lineWidth   = 1.5;
+    curveCtx.stroke();
+  }
+
   // OutputMinimum / OutputMaximum draggable nodes on Y-axis
   const nodeXMap   = { minimum: PAD_LEFT, maximum: PAD_LEFT + plotW };
   const nodeColors = { minimum: '#e06060', maximum: '#3377dd' };
@@ -224,6 +258,12 @@ function curveLayout() {
 
 function nodeCenter(key) {
   const { plotW, plotH } = curveLayout();
+  if (key === 'inputMinimum' || key === 'inputMaximum') {
+    return {
+      x: PAD_LEFT + params[key] * plotW,
+      y: key === 'inputMaximum' ? PAD_TOP : PAD_TOP + plotH,
+    };
+  }
   return {
     x: key === 'maximum' ? PAD_LEFT + plotW : PAD_LEFT,
     y: PAD_TOP + plotH - params[key] * plotH,
@@ -231,7 +271,7 @@ function nodeCenter(key) {
 }
 
 function hitTestCurveNode(cssX, cssY) {
-  for (const key of ['minimum', 'maximum']) {
+  for (const key of ['inputMinimum', 'inputMaximum', 'minimum', 'maximum']) {
     const c  = nodeCenter(key);
     const dx = cssX - c.x;
     const dy = cssY - c.y;
@@ -243,6 +283,11 @@ function hitTestCurveNode(cssX, cssY) {
 function valueFromCurveY(cssY) {
   const { plotH } = curveLayout();
   return Math.min(1, Math.max(0, (PAD_TOP + plotH - cssY) / plotH));
+}
+
+function valueFromCurveX(cssX) {
+  const { plotW } = curveLayout();
+  return Math.min(1, Math.max(0, (cssX - PAD_LEFT) / plotW));
 }
 
 curveCanvas.addEventListener('pointerdown', (e) => {
@@ -262,25 +307,31 @@ curveCanvas.addEventListener('pointermove', (e) => {
   const cssY = e.clientY - rect.top;
 
   if (draggingNode) {
-    let val = valueFromCurveY(cssY);
+    const isInput = draggingNode === 'inputMinimum' || draggingNode === 'inputMaximum';
+    let val = isInput ? valueFromCurveX(cssX) : valueFromCurveY(cssY);
 
-    // Enforce minimum <= maximum
-    if (draggingNode === 'minimum') {
+    // Enforce min <= max within each pair
+    if (draggingNode === 'inputMinimum') {
+      val = Math.min(val, params.inputMaximum);
+    } else if (draggingNode === 'inputMaximum') {
+      val = Math.max(val, params.inputMinimum);
+    } else if (draggingNode === 'minimum') {
       val = Math.min(val, params.maximum);
     } else {
       val = Math.max(val, params.minimum);
     }
 
     val = Math.round(val * 100) / 100; // snap to slider step
-    params[draggingNode]            = val;
-    sliders[draggingNode].value     = val;
+    params[draggingNode]               = val;
+    sliders[draggingNode].value        = val;
     valueEls[draggingNode].textContent = formatValue(draggingNode, val);
     drawCurveCanvas();
     e.stopPropagation();
   } else {
     // Hover cursor
-    const hit = hitTestCurveNode(cssX, cssY);
-    curveCanvas.style.cursor = hit ? 'ns-resize' : 'default';
+    const hit     = hitTestCurveNode(cssX, cssY);
+    const isInput = hit === 'inputMinimum' || hit === 'inputMaximum';
+    curveCanvas.style.cursor = hit ? (isInput ? 'ew-resize' : 'ns-resize') : 'default';
   }
 });
 
@@ -405,30 +456,37 @@ drawCanvas.addEventListener('pointerleave', () => {
 // ── Controls ──────────────────────────────────────────────────
 
 const sliders = {
-  softness: document.getElementById('slider-softness'),
-  minimum:  document.getElementById('slider-minimum'),
-  maximum:  document.getElementById('slider-maximum'),
+  softness:     document.getElementById('slider-softness'),
+  inputMinimum: document.getElementById('slider-input-minimum'),
+  inputMaximum: document.getElementById('slider-input-maximum'),
+  minimum:      document.getElementById('slider-minimum'),
+  maximum:      document.getElementById('slider-maximum'),
 };
 
 const valueEls = {
-  softness: document.getElementById('val-softness'),
-  minimum:  document.getElementById('val-minimum'),
-  maximum:  document.getElementById('val-maximum'),
+  softness:     document.getElementById('val-softness'),
+  inputMinimum: document.getElementById('val-input-minimum'),
+  inputMaximum: document.getElementById('val-input-maximum'),
+  minimum:      document.getElementById('val-minimum'),
+  maximum:      document.getElementById('val-maximum'),
 };
 
 function formatValue(key, val) {
-  if (key === 'softness') return parseFloat(val).toFixed(2);
-  if (key === 'minimum')  return parseFloat(val).toFixed(2);
-  if (key === 'maximum')  return parseFloat(val).toFixed(2);
-  return String(val);
+  return parseFloat(val).toFixed(2);
 }
 
 Object.keys(sliders).forEach(key => {
   sliders[key].addEventListener('input', () => {
     let val = parseFloat(sliders[key].value);
 
-    // Keep minimum <= maximum
-    if (key === 'minimum' && val > params.maximum) {
+    // Keep each min <= max pair
+    if (key === 'inputMinimum' && val > params.inputMaximum) {
+      val = params.inputMaximum;
+      sliders.inputMinimum.value = val;
+    } else if (key === 'inputMaximum' && val < params.inputMinimum) {
+      val = params.inputMinimum;
+      sliders.inputMaximum.value = val;
+    } else if (key === 'minimum' && val > params.maximum) {
       val = params.maximum;
       sliders.minimum.value = val;
     } else if (key === 'maximum' && val < params.minimum) {
@@ -444,12 +502,8 @@ Object.keys(sliders).forEach(key => {
 
 document.getElementById('btn-reset').addEventListener('click', () => {
   Object.assign(params, DEFAULT_PARAMS);
-  sliders.softness.value = DEFAULT_PARAMS.softness;
-  sliders.minimum.value  = DEFAULT_PARAMS.minimum;
-  sliders.maximum.value  = DEFAULT_PARAMS.maximum;
-  Object.keys(valueEls).forEach(k => {
-    valueEls[k].textContent = formatValue(k, DEFAULT_PARAMS[k]);
-  });
+  Object.keys(sliders).forEach(k => { sliders[k].value = DEFAULT_PARAMS[k]; });
+  Object.keys(valueEls).forEach(k => { valueEls[k].textContent = formatValue(k, DEFAULT_PARAMS[k]); });
   drawCurveCanvas();
 });
 
