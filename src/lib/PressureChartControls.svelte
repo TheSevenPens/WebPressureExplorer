@@ -3,6 +3,11 @@
   export let defaultParams;
   export let curveActive = true;
   export let flatActive = false;
+  export let customActive = false;
+  export let canAddCustomPoint = false;
+  export let canRemoveCustomPoint = false;
+  export let onAddCustomPoint = () => {};
+  export let onRemoveCustomPoint = () => {};
 
   function formatValue(value) {
     return Number(value).toFixed(2);
@@ -37,7 +42,28 @@
   }
 
   function resetToDefaults() {
-    params = { ...defaultParams };
+    if (params.curveType === 'flat') {
+      patchParams({ flatLevel: defaultParams.flatLevel });
+      return;
+    }
+
+    if (params.curveType === 'custom') {
+      const defaultCustomPoints = Array.isArray(defaultParams.customPoints)
+        ? defaultParams.customPoints.map((point) => ({ ...point }))
+        : [{ x: 0, y: 0 }, { x: 1, y: 1 }];
+
+      patchParams({ customPoints: defaultCustomPoints });
+      return;
+    }
+
+    patchParams({
+      softness: defaultParams.softness,
+      inputMinimum: defaultParams.inputMinimum,
+      inputMaximum: defaultParams.inputMaximum,
+      minimum: defaultParams.minimum,
+      maximum: defaultParams.maximum,
+      transitionWidth: defaultParams.transitionWidth,
+    });
   }
 </script>
 
@@ -52,8 +78,30 @@
         <option value="flat">Flat</option>
         <option value="power">Power</option>
         <option value="sigmoid">Sigmoid</option>
+        <option value="custom">Custom</option>
       </select>
     </div>
+
+    {#if customActive}
+      <div class="custom-points-actions">
+        <button
+          type="button"
+          class="small-action-btn"
+          on:click={onAddCustomPoint}
+          disabled={!canAddCustomPoint}
+        >
+          Add point
+        </button>
+        <button
+          type="button"
+          class="small-action-btn"
+          on:click={onRemoveCustomPoint}
+          disabled={!canRemoveCustomPoint}
+        >
+          Remove point
+        </button>
+      </div>
+    {/if}
 
     {#if flatActive}
       <div class="param">

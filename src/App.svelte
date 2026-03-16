@@ -12,6 +12,26 @@
     curveType: 'power',
     transitionWidth: 0,
     flatLevel: 0.5,
+    customPoints: [
+      {
+        x: 0,
+        y: 0,
+        inX: 0,
+        inY: 0,
+        outX: 0.33,
+        outY: 0,
+        handleMode: 'broken',
+      },
+      {
+        x: 1,
+        y: 1,
+        inX: 0.67,
+        inY: 1,
+        outX: 1,
+        outY: 1,
+        handleMode: 'broken',
+      },
+    ],
   };
 
   let params = { ...DEFAULT_PARAMS };
