@@ -24,6 +24,7 @@ const DEFAULT_PARAMS = {
   inputMaximum: 1,
   minimum:      0,
   maximum:      1,
+  curveType:    'power',
 };
 
 const params = { ...DEFAULT_PARAMS };
@@ -38,17 +39,31 @@ const params = { ...DEFAULT_PARAMS };
 // Result is mapped to [outputMinimum, outputMaximum].
 
 function applyPressureCurve(x) {
-  const { softness, inputMinimum, inputMaximum, minimum, maximum } = params;
+  const { softness, inputMinimum, inputMaximum, minimum, maximum, curveType } = params;
 
   // Remap x from [inputMinimum, inputMaximum] to [0, 1]
   const inRange = inputMaximum - inputMinimum;
   const xNorm   = inRange > 0 ? Math.min(1, Math.max(0, (x - inputMinimum) / inRange)) : 0;
 
-  // Apply softness curve between the two nodes
-  // softness >= 0: exponent = 1 - softness  (concave, 1.0 → 0.1)
-  // softness <  0: exponent = 1/(1+softness) (convex,  1.0 → 10)
-  const exp    = softness >= 0 ? 1 - softness : 1 / (1 + softness);
-  const curved = Math.pow(xNorm, exp);
+  let curved;
+  if (curveType === 'sigmoid') {
+    // Logistic sigmoid normalized to pass through (0,0) and (1,1).
+    // CurveAmount (softness) controls steepness; 0 → linear.
+    const k = softness * 14;
+    if (Math.abs(k) < 0.01) {
+      curved = xNorm;
+    } else {
+      const sig   = t => 1 / (1 + Math.exp(-k * (t - 0.5)));
+      const s0    = sig(0), s1 = sig(1), range = s1 - s0;
+      curved = Math.abs(range) < 1e-10 ? xNorm : (sig(xNorm) - s0) / range;
+    }
+  } else {
+    // Power curve (default)
+    // softness >= 0: exponent = 1 - softness  (concave, 1.0 → 0.1)
+    // softness <  0: exponent = 1/(1+softness) (convex,  1.0 → 10)
+    const exp = softness >= 0 ? 1 - softness : 1 / (1 + softness);
+    curved = Math.pow(xNorm, exp);
+  }
 
   // Map to output range
   return minimum + curved * (maximum - minimum);
@@ -528,6 +543,12 @@ document.getElementById('btn-reset').addEventListener('click', () => {
     sliders[k].value              = DEFAULT_PARAMS[k];
     valueEls[k].textContent       = formatValue(DEFAULT_PARAMS[k]);
   });
+  document.getElementById('select-curve-type').value = DEFAULT_PARAMS.curveType;
+  drawCurveCanvas();
+});
+
+document.getElementById('select-curve-type').addEventListener('change', (e) => {
+  params.curveType = e.target.value;
   drawCurveCanvas();
 });
 
