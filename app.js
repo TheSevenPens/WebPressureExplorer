@@ -319,7 +319,17 @@ function formatValue(key, val) {
 
 Object.keys(sliders).forEach(key => {
   sliders[key].addEventListener('input', () => {
-    const val = parseFloat(sliders[key].value);
+    let val = parseFloat(sliders[key].value);
+
+    // Keep minimum <= maximum
+    if (key === 'minimum' && val > params.maximum) {
+      val = params.maximum;
+      sliders.minimum.value = val;
+    } else if (key === 'maximum' && val < params.minimum) {
+      val = params.minimum;
+      sliders.maximum.value = val;
+    }
+
     params[key] = val;
     valueEls[key].textContent = formatValue(key, val);
     drawCurveCanvas();
