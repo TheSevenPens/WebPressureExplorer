@@ -24,40 +24,26 @@
     return Math.pow(y / EMA_MAX, 1 / EMA_CURVE_EXPONENT);
   }
 
-  function handleEmaInput(event) {
+  function handlePositionEmaInput(event) {
     const mapped = sliderToEma(parseFloat(event.currentTarget.value));
-    patchParams({ emaSmoothing: Math.round(mapped * 1000) / 1000 });
-  }
-
-  function handleOrderChange(event) {
-    patchParams({ smoothingOrder: event.currentTarget.value });
+    patchParams({ positionEmaSmoothing: Math.round(mapped * 1000) / 1000 });
   }
 </script>
 
 <div class="param-group">
-  <div class="param-group-title">Input Smoothing</div>
+  <div class="param-group-title">Position Smoothing</div>
   <div class="param">
     <div class="param-header">
-      <span class="param-name">Smoothing Order</span>
-    </div>
-    <select value={params.smoothingOrder ?? 'smooth-then-curve'} on:change={handleOrderChange}>
-      <option value="smooth-then-curve">Smooth then curve</option>
-      <option value="curve-then-smooth">Curve then smooth</option>
-    </select>
-  </div>
-
-  <div class="param">
-    <div class="param-header">
-      <span class="param-name">Pressure EMA</span>
-      <span class="param-value">{formatValue(params.emaSmoothing ?? 0)}</span>
+      <span class="param-name">Position EMA</span>
+      <span class="param-value">{formatValue(params.positionEmaSmoothing ?? 0)}</span>
     </div>
     <input
       type="range"
       min="0"
       max="1"
       step="0.001"
-      value={emaToSlider(params.emaSmoothing ?? 0)}
-      on:input={handleEmaInput}
+      value={emaToSlider(params.positionEmaSmoothing ?? 0)}
+      on:input={handlePositionEmaInput}
     >
   </div>
 </div>

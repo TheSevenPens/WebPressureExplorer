@@ -1,4 +1,5 @@
 <script>
+  import PositionControls from './PositionControls.svelte';
   import PressureSmoothingControls from './PressureSmoothingControls.svelte';
 
   export let params;
@@ -71,6 +72,7 @@
 
 <div id="panel-right">
   <div id="controls">
+    <PositionControls bind:params />
     <PressureSmoothingControls bind:params />
 
     <div class="param">
