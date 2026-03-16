@@ -67,16 +67,19 @@ const curveCanvas = document.getElementById('curve-canvas');
 const curveCtx    = curveCanvas.getContext('2d');
 
 const DPR        = window.devicePixelRatio || 1;
-const PAD_LEFT   = 30;   // room for Y-axis labels
-const PAD_BOTTOM = 20;   // room for X-axis labels
-const PAD_TOP    = 8;
-const PAD_RIGHT  = 8;
+const PAD_LEFT   = 42;   // room for Y-axis labels
+const PAD_BOTTOM = 32;   // room for X-axis labels
+const PAD_TOP    = 20;
+const PAD_RIGHT  = 20;
 
 // Current raw input pressure for the live indicator dot (null = hidden)
 let livePressure = null;
 
 // Whether interior grid lines are drawn
 let showGrid = true;
+
+// Whether axis tick labels are drawn
+let showLabels = true;
 
 // Resize the curve canvas to fill the panel width (keeping it square)
 function resizeCurveCanvas() {
@@ -100,6 +103,8 @@ function drawCurveCanvas() {
   // Background
   curveCtx.fillStyle = '#ffffff';
   curveCtx.fillRect(0, 0, W, H);
+  curveCtx.fillStyle = '#f7f7fb';
+  curveCtx.fillRect(PAD_LEFT, PAD_TOP, plotW, plotH);
 
   // Grid lines
   if (showGrid) {
@@ -125,29 +130,40 @@ function drawCurveCanvas() {
   curveCtx.strokeRect(PAD_LEFT, PAD_TOP, plotW, plotH);
 
   // Axis tick labels
-  curveCtx.fillStyle = '#9999aa';
-  curveCtx.font = '9px Consolas, monospace';
+  if (showLabels) {
+    curveCtx.fillStyle = '#000000';
+    curveCtx.font = '9px Consolas, monospace';
 
-  curveCtx.textAlign    = 'center';
-  curveCtx.textBaseline = 'top';
-  for (let i = 0; i <= 5; i++) {
-    const gx = PAD_LEFT + (i / 5) * plotW;
-    curveCtx.fillText((i * 0.2).toFixed(1), gx, PAD_TOP + plotH + 4);
+    curveCtx.textAlign    = 'center';
+    curveCtx.textBaseline = 'top';
+    for (let i = 0; i <= 5; i++) {
+      const gx = PAD_LEFT + (i / 5) * plotW;
+      curveCtx.fillText((i * 0.2).toFixed(1), gx, PAD_TOP + plotH + 4);
+    }
+
+    curveCtx.textAlign    = 'right';
+    curveCtx.textBaseline = 'middle';
+    for (let i = 0; i <= 5; i++) {
+      const gy = PAD_TOP + plotH - (i / 5) * plotH;
+      curveCtx.fillText((i * 0.2).toFixed(1), PAD_LEFT - 4, gy);
+    }
+
+    // X axis title
+    curveCtx.fillStyle    = '#000000';
+    curveCtx.font         = '9px Segoe UI, sans-serif';
+    curveCtx.textAlign    = 'center';
+    curveCtx.textBaseline = 'bottom';
+    curveCtx.fillText('Input logical pressure', PAD_LEFT + plotW / 2, H - 1);
+
+    // Y axis title (rotated)
+    curveCtx.save();
+    curveCtx.translate(9, PAD_TOP + plotH / 2);
+    curveCtx.rotate(-Math.PI / 2);
+    curveCtx.textAlign    = 'center';
+    curveCtx.textBaseline = 'top';
+    curveCtx.fillText('Output logical pressure', 0, 0);
+    curveCtx.restore();
   }
-
-  curveCtx.textAlign    = 'right';
-  curveCtx.textBaseline = 'middle';
-  for (let i = 0; i <= 5; i++) {
-    const gy = PAD_TOP + plotH - (i / 5) * plotH;
-    curveCtx.fillText((i * 0.2).toFixed(1), PAD_LEFT - 4, gy);
-  }
-
-  // Axis labels
-  curveCtx.fillStyle    = '#aaaabc';
-  curveCtx.font         = '9px Segoe UI, sans-serif';
-  curveCtx.textAlign    = 'center';
-  curveCtx.textBaseline = 'bottom';
-  curveCtx.fillText('Input Pressure', PAD_LEFT + plotW / 2, H - 1);
 
   // The pressure curve
   curveCtx.strokeStyle = '#3366ee';
@@ -490,6 +506,84 @@ document.getElementById('btn-clear').addEventListener('click', clearDrawCanvas);
 document.getElementById('chk-grid').addEventListener('change', (e) => {
   showGrid = e.target.checked;
   drawCurveCanvas();
+});
+
+document.getElementById('chk-labels').addEventListener('change', (e) => {
+  showLabels = e.target.checked;
+  drawCurveCanvas();
+});
+
+// ── Chart copy / save ─────────────────────────────────────────
+
+function buildChartCanvas(region) {
+  if (region === 'full') return curveCanvas;
+  // Crop to plot area only
+  const plotW = Math.round((curveCanvas.width  / DPR - PAD_LEFT - PAD_RIGHT)  * DPR);
+  const plotH = Math.round((curveCanvas.height / DPR - PAD_TOP  - PAD_BOTTOM) * DPR);
+  const tmp   = document.createElement('canvas');
+  tmp.width   = plotW;
+  tmp.height  = plotH;
+  tmp.getContext('2d').drawImage(
+    curveCanvas,
+    PAD_LEFT * DPR, PAD_TOP * DPR, plotW, plotH,
+    0, 0, plotW, plotH
+  );
+  return tmp;
+}
+
+function canvasToJpegCanvas(src) {
+  const tmp = document.createElement('canvas');
+  tmp.width  = src.width;
+  tmp.height = src.height;
+  const ctx = tmp.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, tmp.width, tmp.height);
+  ctx.drawImage(src, 0, 0);
+  return tmp;
+}
+
+async function copyChart(region) {
+  const src = buildChartCanvas(region);
+  src.toBlob(async (blob) => {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    } catch (err) {
+      console.error('Clipboard write failed:', err);
+    }
+  }, 'image/png');
+}
+
+function saveChart(region) {
+  const src  = canvasToJpegCanvas(buildChartCanvas(region));
+  const name = region === 'full' ? 'pressure-curve-full.jpg' : 'pressure-curve-plot.jpg';
+  const link = document.createElement('a');
+  link.download = name;
+  link.href     = src.toDataURL('image/jpeg', 0.95);
+  link.click();
+}
+
+// Dropdown toggle logic
+['copy', 'save'].forEach(id => {
+  const btn  = document.getElementById(`btn-${id}`);
+  const menu = document.getElementById(`menu-${id}`);
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.classList.toggle('open');
+    // close the other menu
+    document.querySelectorAll('.dropdown-menu').forEach(m => { if (m !== menu) m.classList.remove('open'); });
+  });
+  menu.addEventListener('click', (e) => {
+    const action = e.target.dataset.action;
+    if (!action) return;
+    menu.classList.remove('open');
+    const [type, region] = action.split('-');
+    if (type === 'copy') copyChart(region === 'full' ? 'full' : 'plot');
+    else                 saveChart(region === 'full' ? 'full' : 'plot');
+  });
+});
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open'));
 });
 
 

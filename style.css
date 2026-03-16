@@ -89,6 +89,67 @@ input[type="range"] {
 }
 
 
+#chart-actions {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 4px;
+}
+
+.dropdown-wrap {
+  position: relative;
+}
+
+.action-btn {
+  padding: 5px 10px;
+  background: #f0f0f8;
+  color: #555566;
+  border: 1px solid #c8c8d8;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.action-btn:hover {
+  background: #e4e4f0;
+  color: #1a1a2e;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  z-index: 100;
+  background: #ffffff;
+  border: 1px solid #c8c8d8;
+  border-radius: 4px;
+  min-width: 148px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+}
+
+.dropdown-menu.open {
+  display: block;
+}
+
+.dropdown-menu button {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  color: #333344;
+}
+
+.dropdown-menu button:hover {
+  background: #f0f0f8;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;
