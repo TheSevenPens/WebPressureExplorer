@@ -28,18 +28,34 @@ body {
 /* ── Curve Panel ─────────────────────────────────────────────── */
 
 #curve-panel {
-  flex: 1;
-  max-width: 25%;
-  min-width: 200px;
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
   background: #ffffff;
   color: #1a1a2e;
+  border-right: 1px solid #d0d0dc;
+}
+
+/* Column 1: graph + copy/save + checkboxes */
+#panel-left {
   display: flex;
   flex-direction: column;
-  padding: 12px;
   gap: 10px;
+  padding: 12px;
+  flex-shrink: 0;
+  min-width: 180px;
+}
+
+/* Column 2: curve type + sliders + reset */
+#panel-right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  width: 190px;
+  border-left: 1px solid #e8e8f0;
   overflow-y: auto;
   scrollbar-gutter: stable;
-  border-right: 1px solid #d0d0dc;
 }
 
 .panel-title {
@@ -63,6 +79,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1;
 }
 
 .param {
