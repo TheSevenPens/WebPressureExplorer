@@ -133,11 +133,6 @@ function drawCurveCanvas() {
     }
   }
 
-  // Plot border
-  curveCtx.strokeStyle = '#c8c8d8';
-  curveCtx.lineWidth = 1;
-  curveCtx.strokeRect(PAD_LEFT, PAD_TOP, plotW, plotH);
-
   // Axis tick labels
   if (showLabels) {
     curveCtx.fillStyle = '#000000';
