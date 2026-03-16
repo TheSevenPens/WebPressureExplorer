@@ -41,16 +41,10 @@ const params = { ...DEFAULT_PARAMS };
 // then clamped to [minimum/100, maximum/100]
 
 function applyPressureCurve(x) {
-  const { softness, minimum, maximum } = params;
+  const { minimum, maximum } = params;
 
-  if (x <= 0) return minimum;
-
-  const exponent = softness >= 0
-    ? (1 - softness)
-    : (1 / (1 + softness));
-
-  const y = Math.pow(x, exponent);
-  return Math.min(Math.max(minimum, y), maximum);
+  // Linear curve: output = input, clamped to [minimum, maximum]
+  return Math.min(Math.max(minimum, x), maximum);
 }
 
 
@@ -162,6 +156,34 @@ function drawCurveCanvas() {
   }
   curveCtx.stroke();
 
+  // OutputMinimum / OutputMaximum draggable nodes on Y-axis
+  const nodeXMap   = { minimum: PAD_LEFT, maximum: PAD_LEFT + plotW };
+  const nodeColors = { minimum: '#e06060', maximum: '#3377dd' };
+  for (const key of ['minimum', 'maximum']) {
+    const val  = params[key];
+    const nx   = nodeXMap[key];
+    const ny   = PAD_TOP + plotH - val * plotH;
+
+    // Horizontal dashed reference line across plot
+    curveCtx.strokeStyle = key === 'minimum' ? 'rgba(220,80,80,0.25)' : 'rgba(50,100,220,0.25)';
+    curveCtx.lineWidth   = 1;
+    curveCtx.setLineDash([3, 4]);
+    curveCtx.beginPath();
+    curveCtx.moveTo(PAD_LEFT, ny);
+    curveCtx.lineTo(PAD_LEFT + plotW, ny);
+    curveCtx.stroke();
+    curveCtx.setLineDash([]);
+
+    // Node circle
+    curveCtx.fillStyle = nodeColors[key];
+    curveCtx.beginPath();
+    curveCtx.arc(nx, ny, 6, 0, Math.PI * 2);
+    curveCtx.fill();
+    curveCtx.strokeStyle = '#ffffff';
+    curveCtx.lineWidth   = 1.5;
+    curveCtx.stroke();
+  }
+
   // Live pressure indicator dot + crosshair guide lines
   if (livePressure !== null) {
     const mapped = applyPressureCurve(livePressure);
@@ -185,6 +207,94 @@ function drawCurveCanvas() {
     curveCtx.fill();
   }
 }
+
+
+// ── Curve-node drag interaction ───────────────────────────────
+
+const NODE_RADIUS = 8;   // hit-test radius in CSS px
+let draggingNode = null; // 'minimum' | 'maximum' | null
+
+function curveLayout() {
+  const W     = curveCanvas.width  / DPR;
+  const H     = curveCanvas.height / DPR;
+  const plotW = W - PAD_LEFT - PAD_RIGHT;
+  const plotH = H - PAD_TOP  - PAD_BOTTOM;
+  return { plotW, plotH };
+}
+
+function nodeCenter(key) {
+  const { plotW, plotH } = curveLayout();
+  return {
+    x: key === 'maximum' ? PAD_LEFT + plotW : PAD_LEFT,
+    y: PAD_TOP + plotH - params[key] * plotH,
+  };
+}
+
+function hitTestCurveNode(cssX, cssY) {
+  for (const key of ['minimum', 'maximum']) {
+    const c  = nodeCenter(key);
+    const dx = cssX - c.x;
+    const dy = cssY - c.y;
+    if (Math.sqrt(dx * dx + dy * dy) <= NODE_RADIUS) return key;
+  }
+  return null;
+}
+
+function valueFromCurveY(cssY) {
+  const { plotH } = curveLayout();
+  return Math.min(1, Math.max(0, (PAD_TOP + plotH - cssY) / plotH));
+}
+
+curveCanvas.addEventListener('pointerdown', (e) => {
+  const rect = curveCanvas.getBoundingClientRect();
+  const cssX = e.clientX - rect.left;
+  const cssY = e.clientY - rect.top;
+  const hit  = hitTestCurveNode(cssX, cssY);
+  if (!hit) return;
+  draggingNode = hit;
+  curveCanvas.setPointerCapture(e.pointerId);
+  e.stopPropagation();
+});
+
+curveCanvas.addEventListener('pointermove', (e) => {
+  const rect = curveCanvas.getBoundingClientRect();
+  const cssX = e.clientX - rect.left;
+  const cssY = e.clientY - rect.top;
+
+  if (draggingNode) {
+    let val = valueFromCurveY(cssY);
+
+    // Enforce minimum <= maximum
+    if (draggingNode === 'minimum') {
+      val = Math.min(val, params.maximum);
+    } else {
+      val = Math.max(val, params.minimum);
+    }
+
+    val = Math.round(val * 100) / 100; // snap to slider step
+    params[draggingNode]            = val;
+    sliders[draggingNode].value     = val;
+    valueEls[draggingNode].textContent = formatValue(draggingNode, val);
+    drawCurveCanvas();
+    e.stopPropagation();
+  } else {
+    // Hover cursor
+    const hit = hitTestCurveNode(cssX, cssY);
+    curveCanvas.style.cursor = hit ? 'ns-resize' : 'default';
+  }
+});
+
+curveCanvas.addEventListener('pointerup', (e) => {
+  if (draggingNode) {
+    draggingNode = null;
+    curveCanvas.style.cursor = 'default';
+    e.stopPropagation();
+  }
+});
+
+curveCanvas.addEventListener('pointerleave', () => {
+  if (!draggingNode) curveCanvas.style.cursor = 'default';
+});
 
 
 // ── Drawing Canvas ────────────────────────────────────────────
