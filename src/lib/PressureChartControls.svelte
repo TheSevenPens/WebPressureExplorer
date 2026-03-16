@@ -42,7 +42,28 @@
   }
 
   function resetToDefaults() {
-    params = { ...defaultParams };
+    if (params.curveType === 'flat') {
+      patchParams({ flatLevel: defaultParams.flatLevel });
+      return;
+    }
+
+    if (params.curveType === 'custom') {
+      const defaultCustomPoints = Array.isArray(defaultParams.customPoints)
+        ? defaultParams.customPoints.map((point) => ({ ...point }))
+        : [{ x: 0, y: 0 }, { x: 1, y: 1 }];
+
+      patchParams({ customPoints: defaultCustomPoints });
+      return;
+    }
+
+    patchParams({
+      softness: defaultParams.softness,
+      inputMinimum: defaultParams.inputMinimum,
+      inputMaximum: defaultParams.inputMaximum,
+      minimum: defaultParams.minimum,
+      maximum: defaultParams.maximum,
+      transitionWidth: defaultParams.transitionWidth,
+    });
   }
 </script>
 
