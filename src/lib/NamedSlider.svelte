@@ -68,6 +68,7 @@
     <span class="param-value">{formatValue(value)}</span>
   </div>
   <input
+    class="named-slider-input"
     type="range"
     min={sliderMin}
     max={sliderMax}
@@ -76,3 +77,44 @@
     on:input={handleInput}
   >
 </div>
+
+<style>
+  .named-slider-input {
+    width: 100%;
+    height: 4px;
+    cursor: pointer;
+    accent-color: var(--slider-accent);
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+  }
+
+  .named-slider-input::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--slider-track);
+  }
+
+  .named-slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--slider-accent);
+    margin-top: -2.5px;
+  }
+
+  .named-slider-input::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--slider-track);
+  }
+
+  .named-slider-input::-moz-range-thumb {
+    width: 9px;
+    height: 9px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--slider-accent);
+  }
+</style>
