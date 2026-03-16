@@ -32,6 +32,11 @@
 
   let menuCopyOpen = false;
   let menuSaveOpen = false;
+  let customContextMenuOpen = false;
+  let customContextMenuX = 0;
+  let customContextMenuY = 0;
+  let customContextValueX = null;
+  let customContextValueY = null;
   let copyButtonLabel = 'Copy ▾';
 
   let curvePanelEl;
@@ -41,10 +46,15 @@
   let curveDpr = 1;
   let lastCurveSize = 0;
   let draggingNode = null;
+  let selectedCustomPoint = null;
   let isReady = false;
 
-  $: curveActive = params.curveType !== 'null-effect' && params.curveType !== 'flat';
+  $: curveActive = params.curveType === 'power' || params.curveType === 'sigmoid';
   $: flatActive = params.curveType === 'flat';
+  $: customActive = params.curveType === 'custom';
+  $: customPoints = sanitizeCustomPoints(params.customPoints);
+  $: canAddCustomPoint = customActive && customPoints.length < 16;
+  $: canRemoveCustomPoint = customActive && customPoints.length > 2;
 
   $: if (isReady) {
     params;
@@ -58,6 +68,108 @@
 
   function patchParams(nextValues) {
     params = { ...params, ...nextValues };
+  }
+
+  function sanitizeCustomPoints(points) {
+    const source = Array.isArray(points) && points.length > 0
+      ? points
+      : [{ x: 0, y: 0 }, { x: 1, y: 1 }];
+
+    const normalized = source
+      .map((point) => ({
+        x: Number(point?.x ?? 0),
+        y: Number(point?.y ?? 0),
+      }))
+      .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+      .map((point) => ({
+        x: Math.min(1, Math.max(0, point.x)),
+        y: Math.min(1, Math.max(0, point.y)),
+      }))
+      .sort((a, b) => a.x - b.x);
+
+    if (normalized.length === 0) {
+      return [{ x: 0, y: 0 }, { x: 1, y: 1 }];
+    }
+
+    if (normalized[0].x > 0) {
+      normalized.unshift({ x: 0, y: normalized[0].y });
+    } else {
+      normalized[0] = { ...normalized[0], x: 0 };
+    }
+
+    const lastIndex = normalized.length - 1;
+    if (normalized[lastIndex].x < 1) {
+      normalized.push({ x: 1, y: normalized[lastIndex].y });
+    } else {
+      normalized[lastIndex] = { ...normalized[lastIndex], x: 1 };
+    }
+
+    return normalized;
+  }
+
+  function updateCustomPoints(nextPoints) {
+    patchParams({ customPoints: sanitizeCustomPoints(nextPoints) });
+  }
+
+  function customPointCenter(index) {
+    const { plotW, plotH } = curveLayout();
+    const point = customPoints[index];
+    if (!point) return null;
+    return {
+      x: PAD_LEFT + point.x * plotW,
+      y: PAD_TOP + plotH - point.y * plotH,
+    };
+  }
+
+  function hitTestCustomPoint(cssX, cssY) {
+    for (let i = customPoints.length - 1; i >= 0; i -= 1) {
+      const center = customPointCenter(i);
+      if (!center) continue;
+      const dx = cssX - center.x;
+      const dy = cssY - center.y;
+      if (Math.sqrt(dx * dx + dy * dy) <= NODE_RADIUS) return i;
+    }
+    return null;
+  }
+
+  function addCustomPoint() {
+    if (!canAddCustomPoint) return;
+
+    let targetIndex = 0;
+    let maxGap = -1;
+    for (let i = 0; i < customPoints.length - 1; i += 1) {
+      const gap = customPoints[i + 1].x - customPoints[i].x;
+      if (gap > maxGap) {
+        maxGap = gap;
+        targetIndex = i;
+      }
+    }
+
+    const left = customPoints[targetIndex];
+    const right = customPoints[targetIndex + 1];
+    const newPoint = {
+      x: Math.round(((left.x + right.x) / 2) * 100) / 100,
+      y: Math.round(((left.y + right.y) / 2) * 100) / 100,
+    };
+
+    const next = [...customPoints];
+    next.splice(targetIndex + 1, 0, newPoint);
+    updateCustomPoints(next);
+    selectedCustomPoint = targetIndex + 1;
+  }
+
+  function removeCustomPoint() {
+    if (!canRemoveCustomPoint) return;
+
+    const isRemovableSelection = selectedCustomPoint !== null
+      && selectedCustomPoint > 0
+      && selectedCustomPoint < customPoints.length - 1;
+    const removeIndex = isRemovableSelection ? selectedCustomPoint : customPoints.length - 2;
+
+    const next = [...customPoints];
+    next.splice(removeIndex, 1);
+    updateCustomPoints(next);
+    selectedCustomPoint = null;
   }
 
   function curveLayout() {
@@ -101,6 +213,88 @@
   function valueFromCurveY(cssY) {
     const { plotH } = curveLayout();
     return Math.min(1, Math.max(0, (PAD_TOP + plotH - cssY) / plotH));
+  }
+
+  function isInsidePlotArea(cssX, cssY) {
+    const { plotW, plotH } = curveLayout();
+    return cssX >= PAD_LEFT
+      && cssX <= PAD_LEFT + plotW
+      && cssY >= PAD_TOP
+      && cssY <= PAD_TOP + plotH;
+  }
+
+  function insertCustomPointAt(cssX, cssY) {
+    if (!canAddCustomPoint || !isInsidePlotArea(cssX, cssY)) return null;
+
+    const rawX = valueFromCurveX(cssX);
+    const rawY = valueFromCurveY(cssY);
+    let insertIndex = customPoints.findIndex((point) => point.x > rawX);
+
+    if (insertIndex <= 0) {
+      insertIndex = 1;
+    } else if (insertIndex === -1) {
+      insertIndex = customPoints.length - 1;
+    }
+
+    const prevX = customPoints[insertIndex - 1].x;
+    const nextX = customPoints[insertIndex].x;
+    const minX = prevX + 0.01;
+    const maxX = nextX - 0.01;
+    if (minX > maxX) return null;
+
+    let x = Math.min(maxX, Math.max(minX, rawX));
+    x = Math.round(x * 100) / 100;
+    x = Math.min(maxX, Math.max(minX, x));
+
+    const y = Math.round(rawY * 100) / 100;
+
+    const next = [...customPoints];
+    next.splice(insertIndex, 0, { x, y });
+    updateCustomPoints(next);
+    selectedCustomPoint = insertIndex;
+    return insertIndex;
+  }
+
+  function openCustomContextMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!customActive) {
+      closeMenus();
+      return;
+    }
+
+    const rect = curveCanvasEl.getBoundingClientRect();
+    const cssX = event.clientX - rect.left;
+    const cssY = event.clientY - rect.top;
+
+    customContextMenuOpen = true;
+    customContextMenuX = event.clientX;
+    customContextMenuY = event.clientY;
+    customContextValueX = valueFromCurveX(cssX);
+    customContextValueY = valueFromCurveY(cssY);
+    menuCopyOpen = false;
+    menuSaveOpen = false;
+  }
+
+  function addCustomPointFromContextMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (customContextValueX === null || customContextValueY === null) {
+      closeMenus();
+      return;
+    }
+
+    const { plotW, plotH } = curveLayout();
+    const cssX = PAD_LEFT + customContextValueX * plotW;
+    const cssY = PAD_TOP + plotH - customContextValueY * plotH;
+    const insertedIndex = insertCustomPointAt(cssX, cssY);
+    if (insertedIndex !== null) {
+      selectedCustomPoint = insertedIndex;
+    }
+
+    closeMenus();
   }
 
   function resizeCurveCanvas() {
@@ -208,6 +402,51 @@
       curveCtx.moveTo(PAD_LEFT, fy);
       curveCtx.lineTo(PAD_LEFT + plotW, fy);
       curveCtx.stroke();
+    } else if (customActive) {
+      curveCtx.strokeStyle = CURVE_COLOR;
+      curveCtx.beginPath();
+      for (let i = 0; i < customPoints.length; i += 1) {
+        const point = customPoints[i];
+        const cx = PAD_LEFT + point.x * plotW;
+        const cy = PAD_TOP + plotH - point.y * plotH;
+        if (i === 0) {
+          curveCtx.moveTo(cx, cy);
+        } else {
+          curveCtx.lineTo(cx, cy);
+        }
+      }
+      curveCtx.stroke();
+
+      if (showNodes) {
+        for (let i = 0; i < customPoints.length; i += 1) {
+          const point = customPoints[i];
+          const nodeX = PAD_LEFT + point.x * plotW;
+          const nodeY = PAD_TOP + plotH - point.y * plotH;
+          const isEndpoint = i === 0 || i === customPoints.length - 1;
+
+          if (showNodeGuides) {
+            curveCtx.strokeStyle = 'rgba(0, 0, 0, 0.22)';
+            curveCtx.lineWidth = 1;
+            curveCtx.setLineDash([3, 4]);
+            curveCtx.beginPath();
+            curveCtx.moveTo(nodeX, nodeY);
+            curveCtx.lineTo(nodeX, PAD_TOP + plotH);
+            curveCtx.moveTo(nodeX, nodeY);
+            curveCtx.lineTo(PAD_LEFT, nodeY);
+            curveCtx.stroke();
+            curveCtx.setLineDash([]);
+          }
+
+          curveCtx.fillStyle = isEndpoint ? '#7a7a8b' : '#2255cc';
+          curveCtx.beginPath();
+          curveCtx.arc(nodeX, nodeY, 6, 0, Math.PI * 2);
+          curveCtx.fill();
+
+          curveCtx.strokeStyle = '#ffffff';
+          curveCtx.lineWidth = 1.5;
+          curveCtx.stroke();
+        }
+      }
     } else {
       const inMin = params.inputMinimum;
       const inMax = params.inputMaximum;
@@ -311,15 +550,29 @@
   }
 
   function onCurvePointerDown(event) {
-    if (!curveActive) return;
-
     const rect = curveCanvasEl.getBoundingClientRect();
     const cssX = event.clientX - rect.left;
     const cssY = event.clientY - rect.top;
+
+    if (customActive) {
+      const hitIndex = hitTestCustomPoint(cssX, cssY);
+      if (hitIndex === null) {
+        selectedCustomPoint = null;
+        return;
+      }
+      selectedCustomPoint = hitIndex;
+      draggingNode = { type: 'custom', index: hitIndex };
+      if (curveCanvasEl?.setPointerCapture) {
+        curveCanvasEl.setPointerCapture(event.pointerId);
+      }
+      return;
+    }
+
+    if (!curveActive) return;
     const hit = hitTestCurveNode(cssX, cssY);
     if (!hit) return;
 
-    draggingNode = hit;
+    draggingNode = { type: 'standard', key: hit };
     if (curveCanvasEl?.setPointerCapture) {
       curveCanvasEl.setPointerCapture(event.pointerId);
     }
@@ -330,11 +583,40 @@
     const cssX = event.clientX - rect.left;
     const cssY = event.clientY - rect.top;
 
-    if (draggingNode) {
+    if (draggingNode?.type === 'custom') {
+      const pointIndex = draggingNode.index;
+      if (pointIndex === null || pointIndex >= customPoints.length) return;
+
+      const next = [...customPoints];
+      const prevX = pointIndex > 0 ? next[pointIndex - 1].x : 0;
+      const nextX = pointIndex < next.length - 1 ? next[pointIndex + 1].x : 1;
+
+      let inVal = Math.round(valueFromCurveX(cssX) * 100) / 100;
+      const outVal = Math.round(valueFromCurveY(cssY) * 100) / 100;
+
+      if (pointIndex === 0) {
+        inVal = 0;
+      } else if (pointIndex === next.length - 1) {
+        inVal = 1;
+      } else {
+        inVal = Math.max(prevX + 0.01, Math.min(nextX - 0.01, inVal));
+      }
+
+      next[pointIndex] = {
+        x: inVal,
+        y: outVal,
+      };
+
+      updateCustomPoints(next);
+      drawCurveCanvas();
+      return;
+    }
+
+    if (draggingNode?.type === 'standard') {
       let inVal = Math.round(valueFromCurveX(cssX) * 100) / 100;
       let outVal = Math.round(valueFromCurveY(cssY) * 100) / 100;
 
-      if (draggingNode === 'a') {
+      if (draggingNode.key === 'a') {
         inVal = Math.min(inVal, params.inputMaximum - 0.01);
         outVal = Math.min(outVal, params.maximum);
         patchParams({
@@ -354,16 +636,32 @@
       return;
     }
 
-    curveCanvasEl.style.cursor = hitTestCurveNode(cssX, cssY) ? 'move' : 'default';
+    if (customActive) {
+      curveCanvasEl.style.cursor = hitTestCustomPoint(cssX, cssY) !== null ? 'move' : 'default';
+    } else {
+      curveCanvasEl.style.cursor = hitTestCurveNode(cssX, cssY) ? 'move' : 'default';
+    }
   }
 
-  function onCurvePointerUp() {
+  function onCurvePointerUp(event) {
     if (!draggingNode) return;
+    if (curveCanvasEl?.releasePointerCapture && event?.pointerId !== undefined) {
+      try {
+        curveCanvasEl.releasePointerCapture(event.pointerId);
+      } catch {
+        // Ignore release errors from already-released pointers.
+      }
+    }
     draggingNode = null;
     curveCanvasEl.style.cursor = 'default';
   }
 
-  function onCurvePointerLeave() {
+  function onCurvePointerLeave(event) {
+    if (draggingNode) {
+      onCurvePointerUp(event);
+      return;
+    }
+
     if (!draggingNode) {
       curveCanvasEl.style.cursor = 'default';
     }
@@ -373,17 +671,22 @@
     event.stopPropagation();
     menuCopyOpen = !menuCopyOpen;
     menuSaveOpen = false;
+    customContextMenuOpen = false;
   }
 
   function toggleSaveMenu(event) {
     event.stopPropagation();
     menuSaveOpen = !menuSaveOpen;
     menuCopyOpen = false;
+    customContextMenuOpen = false;
   }
 
   function closeMenus() {
     menuCopyOpen = false;
     menuSaveOpen = false;
+    customContextMenuOpen = false;
+    customContextValueX = null;
+    customContextValueY = null;
   }
 
   function buildChartCanvas(region) {
@@ -496,7 +799,23 @@
       on:pointermove={onCurvePointerMove}
       on:pointerup={onCurvePointerUp}
       on:pointerleave={onCurvePointerLeave}
+      on:contextmenu={openCustomContextMenu}
     ></canvas>
+
+    {#if customContextMenuOpen}
+      <div
+        class="canvas-context-menu"
+        style={`left: ${customContextMenuX}px; top: ${customContextMenuY}px;`}
+      >
+        <button
+          type="button"
+          disabled={!canAddCustomPoint}
+          on:click={addCustomPointFromContextMenu}
+        >
+          Add point here
+        </button>
+      </div>
+    {/if}
 
     <div id="chart-actions">
       <div class="dropdown-wrap">
@@ -526,5 +845,15 @@
     />
   </div>
 
-  <PressureChartControls bind:params {defaultParams} {curveActive} {flatActive} />
+  <PressureChartControls
+    bind:params
+    {defaultParams}
+    {curveActive}
+    {flatActive}
+    {customActive}
+    {canAddCustomPoint}
+    {canRemoveCustomPoint}
+    onAddCustomPoint={addCustomPoint}
+    onRemoveCustomPoint={removeCustomPoint}
+  />
 </div>

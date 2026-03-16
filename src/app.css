@@ -194,6 +194,38 @@ input[type="checkbox"]:disabled {
   background: #f0f0f8;
 }
 
+.canvas-context-menu {
+  position: fixed;
+  z-index: 300;
+  background: #ffffff;
+  border: 1px solid #c8c8d8;
+  border-radius: 4px;
+  min-width: 136px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.canvas-context-menu button {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  color: #333344;
+}
+
+.canvas-context-menu button:hover:not(:disabled) {
+  background: #f0f0f8;
+}
+
+.canvas-context-menu button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;
@@ -225,6 +257,33 @@ input[type="checkbox"]:disabled {
 #btn-reset:hover {
   background: #e4e4f0;
   color: #1a1a2e;
+}
+
+.custom-points-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.small-action-btn {
+  flex: 1;
+  padding: 5px 8px;
+  background: #f0f0f8;
+  color: #555566;
+  border: 1px solid #c8c8d8;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.small-action-btn:hover:not(:disabled) {
+  background: #e4e4f0;
+  color: #1a1a2e;
+}
+
+.small-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 #draw-panel {

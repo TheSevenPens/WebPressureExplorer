@@ -3,6 +3,11 @@
   export let defaultParams;
   export let curveActive = true;
   export let flatActive = false;
+  export let customActive = false;
+  export let canAddCustomPoint = false;
+  export let canRemoveCustomPoint = false;
+  export let onAddCustomPoint = () => {};
+  export let onRemoveCustomPoint = () => {};
 
   function formatValue(value) {
     return Number(value).toFixed(2);
@@ -52,8 +57,30 @@
         <option value="flat">Flat</option>
         <option value="power">Power</option>
         <option value="sigmoid">Sigmoid</option>
+        <option value="custom">Custom</option>
       </select>
     </div>
+
+    {#if customActive}
+      <div class="custom-points-actions">
+        <button
+          type="button"
+          class="small-action-btn"
+          on:click={onAddCustomPoint}
+          disabled={!canAddCustomPoint}
+        >
+          Add point
+        </button>
+        <button
+          type="button"
+          class="small-action-btn"
+          on:click={onRemoveCustomPoint}
+          disabled={!canRemoveCustomPoint}
+        >
+          Remove point
+        </button>
+      </div>
+    {/if}
 
     {#if flatActive}
       <div class="param">

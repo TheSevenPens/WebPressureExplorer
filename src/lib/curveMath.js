@@ -35,6 +35,64 @@ export function rawCurveSlope(xNorm, params) {
   return (rawCurveOutput(x1, params) - rawCurveOutput(x0, params)) / (x1 - x0);
 }
 
+function normalizeCustomPoints(points) {
+  const source = Array.isArray(points) && points.length > 0
+    ? points
+    : [{ x: 0, y: 0 }, { x: 1, y: 1 }];
+
+  const normalized = source
+    .map((point) => ({
+      x: Number(point?.x ?? 0),
+      y: Number(point?.y ?? 0),
+    }))
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+    .map((point) => ({
+      x: Math.min(1, Math.max(0, point.x)),
+      y: Math.min(1, Math.max(0, point.y)),
+    }))
+    .sort((a, b) => a.x - b.x);
+
+  if (normalized.length === 0) {
+    return [{ x: 0, y: 0 }, { x: 1, y: 1 }];
+  }
+
+  if (normalized[0].x > 0) {
+    normalized.unshift({ x: 0, y: normalized[0].y });
+  } else {
+    normalized[0] = { ...normalized[0], x: 0 };
+  }
+
+  const lastIndex = normalized.length - 1;
+  if (normalized[lastIndex].x < 1) {
+    normalized.push({ x: 1, y: normalized[lastIndex].y });
+  } else {
+    normalized[lastIndex] = { ...normalized[lastIndex], x: 1 };
+  }
+
+  return normalized;
+}
+
+function evaluateCustomCurve(x, points) {
+  const normalized = normalizeCustomPoints(points);
+
+  if (x <= normalized[0].x) return normalized[0].y;
+  const last = normalized[normalized.length - 1];
+  if (x >= last.x) return last.y;
+
+  for (let i = 0; i < normalized.length - 1; i += 1) {
+    const left = normalized[i];
+    const right = normalized[i + 1];
+    if (x <= right.x) {
+      const span = right.x - left.x;
+      if (span <= 1e-6) return right.y;
+      const t = (x - left.x) / span;
+      return left.y + t * (right.y - left.y);
+    }
+  }
+
+  return last.y;
+}
+
 export function applyPressureCurve(x, params) {
   const {
     inputMinimum,
@@ -44,10 +102,15 @@ export function applyPressureCurve(x, params) {
     curveType,
     transitionWidth,
     flatLevel,
+    customPoints,
   } = params;
 
   if (curveType === 'null-effect') return x;
   if (curveType === 'flat') return flatLevel;
+  if (curveType === 'custom') {
+    const clampedX = Math.min(1, Math.max(0, x));
+    return evaluateCustomCurve(clampedX, customPoints);
+  }
 
   const inputRange = inputMaximum - inputMinimum;
   const xNorm = inputRange > 0 ? Math.min(1, Math.max(0, (x - inputMinimum) / inputRange)) : 0;
