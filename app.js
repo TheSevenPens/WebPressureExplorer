@@ -285,7 +285,7 @@ curveCanvas.addEventListener('pointermove', (e) => {
 
     if (draggingNode === 'a') {
       // Node A: clamp so it doesn't cross Node B
-      inVal  = Math.min(inVal,  params.inputMaximum);
+      inVal  = Math.min(inVal,  params.inputMaximum - 0.01);
       outVal = Math.min(outVal, params.maximum);
       params.inputMinimum = inVal;
       params.minimum      = outVal;
@@ -295,7 +295,7 @@ curveCanvas.addEventListener('pointermove', (e) => {
       valueEls.minimum.textContent      = formatValue('minimum', outVal);
     } else {
       // Node B: clamp so it doesn't cross Node A
-      inVal  = Math.max(inVal,  params.inputMinimum);
+      inVal  = Math.max(inVal,  params.inputMinimum + 0.01);
       outVal = Math.max(outVal, params.minimum);
       params.inputMaximum = inVal;
       params.maximum      = outVal;
@@ -458,11 +458,11 @@ Object.keys(sliders).forEach(key => {
     let val = parseFloat(sliders[key].value);
 
     // Keep each min <= max pair
-    if (key === 'inputMinimum' && val > params.inputMaximum) {
-      val = params.inputMaximum;
+    if (key === 'inputMinimum' && val > params.inputMaximum - 0.01) {
+      val = params.inputMaximum - 0.01;
       sliders.inputMinimum.value = val;
-    } else if (key === 'inputMaximum' && val < params.inputMinimum) {
-      val = params.inputMinimum;
+    } else if (key === 'inputMaximum' && val < params.inputMinimum + 0.01) {
+      val = params.inputMinimum + 0.01;
       sliders.inputMaximum.value = val;
     } else if (key === 'minimum' && val > params.maximum) {
       val = params.maximum;
