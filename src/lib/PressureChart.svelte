@@ -20,6 +20,7 @@
   const MAX_CONTROL_NODE_GUIDE = 'rgba(0, 0, 0, 0.25)';
 
   const NODE_RADIUS = 8;
+  const HANDLE_RADIUS = 5;
 
   export let params;
   export let livePressure = null;
@@ -37,6 +38,7 @@
   let customContextMenuY = 0;
   let customContextValueX = null;
   let customContextValueY = null;
+  let customContextPointIndex = null;
   let copyButtonLabel = 'Copy ▾';
 
   let curvePanelEl;
@@ -47,6 +49,7 @@
   let lastCurveSize = 0;
   let draggingNode = null;
   let selectedCustomPoint = null;
+  let selectedCustomHandle = null;
   let isReady = false;
 
   $: curveActive = params.curveType === 'power' || params.curveType === 'sigmoid';
@@ -79,32 +82,83 @@
       .map((point) => ({
         x: Number(point?.x ?? 0),
         y: Number(point?.y ?? 0),
+        inX: Number(point?.inX ?? point?.x ?? 0),
+        inY: Number(point?.inY ?? point?.y ?? 0),
+        outX: Number(point?.outX ?? point?.x ?? 0),
+        outY: Number(point?.outY ?? point?.y ?? 0),
+        handleMode: point?.handleMode === 'mirrored' ? 'mirrored' : 'broken',
       }))
       .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
       .map((point) => ({
         x: Math.min(1, Math.max(0, point.x)),
         y: Math.min(1, Math.max(0, point.y)),
+        inX: Number.isFinite(point.inX) ? Math.min(1, Math.max(0, point.inX)) : Math.min(1, Math.max(0, point.x)),
+        inY: Number.isFinite(point.inY) ? Math.min(1, Math.max(0, point.inY)) : Math.min(1, Math.max(0, point.y)),
+        outX: Number.isFinite(point.outX) ? Math.min(1, Math.max(0, point.outX)) : Math.min(1, Math.max(0, point.x)),
+        outY: Number.isFinite(point.outY) ? Math.min(1, Math.max(0, point.outY)) : Math.min(1, Math.max(0, point.y)),
+        handleMode: point.handleMode,
       }))
       .sort((a, b) => a.x - b.x);
 
     if (normalized.length === 0) {
-      return [{ x: 0, y: 0 }, { x: 1, y: 1 }];
+      return [
+        { x: 0, y: 0, inX: 0, inY: 0, outX: 0.33, outY: 0, handleMode: 'broken' },
+        { x: 1, y: 1, inX: 0.67, inY: 1, outX: 1, outY: 1, handleMode: 'broken' },
+      ];
     }
 
     if (normalized[0].x > 0) {
-      normalized.unshift({ x: 0, y: normalized[0].y });
+      normalized.unshift({
+        x: 0,
+        y: normalized[0].y,
+        inX: 0,
+        inY: normalized[0].y,
+        outX: Math.min(1, normalized[0].x / 2),
+        outY: normalized[0].y,
+        handleMode: 'broken',
+      });
     } else {
       normalized[0] = { ...normalized[0], x: 0 };
     }
 
     const lastIndex = normalized.length - 1;
     if (normalized[lastIndex].x < 1) {
-      normalized.push({ x: 1, y: normalized[lastIndex].y });
+      normalized.push({
+        x: 1,
+        y: normalized[lastIndex].y,
+        inX: Math.max(0, (normalized[lastIndex].x + 1) / 2),
+        inY: normalized[lastIndex].y,
+        outX: 1,
+        outY: normalized[lastIndex].y,
+        handleMode: 'broken',
+      });
     } else {
       normalized[lastIndex] = { ...normalized[lastIndex], x: 1 };
     }
 
+    for (let i = 0; i < normalized.length; i += 1) {
+      const point = normalized[i];
+      const prevX = i > 0 ? normalized[i - 1].x : point.x;
+      const nextX = i < normalized.length - 1 ? normalized[i + 1].x : point.x;
+      point.inX = Math.max(prevX, Math.min(point.x, point.inX));
+      point.outX = Math.max(point.x, Math.min(nextX, point.outX));
+      point.inY = Math.min(1, Math.max(0, point.inY));
+      point.outY = Math.min(1, Math.max(0, point.outY));
+      point.handleMode = point.handleMode === 'mirrored' ? 'mirrored' : 'broken';
+    }
+
+    normalized[0].inX = normalized[0].x;
+    normalized[0].inY = normalized[0].y;
+    normalized[0].handleMode = 'broken';
+    normalized[lastIndex].outX = normalized[lastIndex].x;
+    normalized[lastIndex].outY = normalized[lastIndex].y;
+    normalized[lastIndex].handleMode = 'broken';
+
     return normalized;
+  }
+
+  function isRemovableCustomPoint(index) {
+    return index !== null && index > 0 && index < customPoints.length - 1;
   }
 
   function updateCustomPoints(nextPoints) {
@@ -132,6 +186,44 @@
     return null;
   }
 
+  function customHandleCenter(index, handle) {
+    const { plotW, plotH } = curveLayout();
+    const point = customPoints[index];
+    if (!point) return null;
+
+    const xValue = handle === 'in' ? point.inX : point.outX;
+    const yValue = handle === 'in' ? point.inY : point.outY;
+    return {
+      x: PAD_LEFT + xValue * plotW,
+      y: PAD_TOP + plotH - yValue * plotH,
+    };
+  }
+
+  function hitTestCustomHandle(cssX, cssY) {
+    for (let i = customPoints.length - 1; i >= 0; i -= 1) {
+      const point = customPoints[i];
+      const handles = [];
+      if (i > 0 && (point.inX !== point.x || point.inY !== point.y)) {
+        handles.push('in');
+      }
+      if (i < customPoints.length - 1 && (point.outX !== point.x || point.outY !== point.y)) {
+        handles.push('out');
+      }
+
+      for (const handle of handles) {
+        const center = customHandleCenter(i, handle);
+        if (!center) continue;
+        const dx = cssX - center.x;
+        const dy = cssY - center.y;
+        if (Math.sqrt(dx * dx + dy * dy) <= HANDLE_RADIUS + 1) {
+          return { index: i, handle };
+        }
+      }
+    }
+
+    return null;
+  }
+
   function addCustomPoint() {
     if (!canAddCustomPoint) return;
 
@@ -150,6 +242,11 @@
     const newPoint = {
       x: Math.round(((left.x + right.x) / 2) * 100) / 100,
       y: Math.round(((left.y + right.y) / 2) * 100) / 100,
+      inX: Math.round(((left.x * 0.66 + right.x * 0.34)) * 100) / 100,
+      inY: Math.round(((left.y * 0.66 + right.y * 0.34)) * 100) / 100,
+      outX: Math.round(((left.x * 0.34 + right.x * 0.66)) * 100) / 100,
+      outY: Math.round(((left.y * 0.34 + right.y * 0.66)) * 100) / 100,
+      handleMode: 'broken',
     };
 
     const next = [...customPoints];
@@ -161,15 +258,14 @@
   function removeCustomPoint() {
     if (!canRemoveCustomPoint) return;
 
-    const isRemovableSelection = selectedCustomPoint !== null
-      && selectedCustomPoint > 0
-      && selectedCustomPoint < customPoints.length - 1;
+    const isRemovableSelection = isRemovableCustomPoint(selectedCustomPoint);
     const removeIndex = isRemovableSelection ? selectedCustomPoint : customPoints.length - 2;
 
     const next = [...customPoints];
     next.splice(removeIndex, 1);
     updateCustomPoints(next);
     selectedCustomPoint = null;
+    selectedCustomHandle = null;
   }
 
   function curveLayout() {
@@ -249,7 +345,15 @@
     const y = Math.round(rawY * 100) / 100;
 
     const next = [...customPoints];
-    next.splice(insertIndex, 0, { x, y });
+    next.splice(insertIndex, 0, {
+      x,
+      y,
+      inX: Math.round((prevX + x) * 50) / 100,
+      inY: y,
+      outX: Math.round((x + nextX) * 50) / 100,
+      outY: y,
+      handleMode: 'broken',
+    });
     updateCustomPoints(next);
     selectedCustomPoint = insertIndex;
     return insertIndex;
@@ -267,12 +371,25 @@
     const rect = curveCanvasEl.getBoundingClientRect();
     const cssX = event.clientX - rect.left;
     const cssY = event.clientY - rect.top;
+    const hitIndex = hitTestCustomPoint(cssX, cssY);
+    const insidePlot = isInsidePlotArea(cssX, cssY);
+    const canAddAtLocation = canAddCustomPoint && insidePlot;
+    const canRemoveAtPoint = isRemovableCustomPoint(hitIndex);
+
+    if (!canAddAtLocation && !canRemoveAtPoint) {
+      closeMenus();
+      return;
+    }
 
     customContextMenuOpen = true;
     customContextMenuX = event.clientX;
     customContextMenuY = event.clientY;
-    customContextValueX = valueFromCurveX(cssX);
-    customContextValueY = valueFromCurveY(cssY);
+    customContextValueX = canAddAtLocation ? valueFromCurveX(cssX) : null;
+    customContextValueY = canAddAtLocation ? valueFromCurveY(cssY) : null;
+    customContextPointIndex = hitIndex;
+    if (hitIndex !== null) {
+      selectedCustomPoint = hitIndex;
+    }
     menuCopyOpen = false;
     menuSaveOpen = false;
   }
@@ -294,6 +411,39 @@
       selectedCustomPoint = insertedIndex;
     }
 
+    closeMenus();
+  }
+
+  function removeCustomPointFromContextMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!isRemovableCustomPoint(customContextPointIndex)) {
+      closeMenus();
+      return;
+    }
+
+    selectedCustomPoint = customContextPointIndex;
+    removeCustomPoint();
+    closeMenus();
+  }
+
+  function setCustomPointHandleModeFromContextMenu(mode, event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!isRemovableCustomPoint(customContextPointIndex)) {
+      closeMenus();
+      return;
+    }
+
+    const next = [...customPoints];
+    next[customContextPointIndex] = {
+      ...next[customContextPointIndex],
+      handleMode: mode === 'mirrored' ? 'mirrored' : 'broken',
+    };
+
+    updateCustomPoints(next);
     closeMenus();
   }
 
@@ -405,14 +555,21 @@
     } else if (customActive) {
       curveCtx.strokeStyle = CURVE_COLOR;
       curveCtx.beginPath();
-      for (let i = 0; i < customPoints.length; i += 1) {
-        const point = customPoints[i];
-        const cx = PAD_LEFT + point.x * plotW;
-        const cy = PAD_TOP + plotH - point.y * plotH;
-        if (i === 0) {
-          curveCtx.moveTo(cx, cy);
-        } else {
-          curveCtx.lineTo(cx, cy);
+      if (customPoints.length > 0) {
+        const first = customPoints[0];
+        curveCtx.moveTo(PAD_LEFT + first.x * plotW, PAD_TOP + plotH - first.y * plotH);
+
+        for (let i = 0; i < customPoints.length - 1; i += 1) {
+          const a = customPoints[i];
+          const b = customPoints[i + 1];
+          curveCtx.bezierCurveTo(
+            PAD_LEFT + a.outX * plotW,
+            PAD_TOP + plotH - a.outY * plotH,
+            PAD_LEFT + b.inX * plotW,
+            PAD_TOP + plotH - b.inY * plotH,
+            PAD_LEFT + b.x * plotW,
+            PAD_TOP + plotH - b.y * plotH,
+          );
         }
       }
       curveCtx.stroke();
@@ -423,18 +580,52 @@
           const nodeX = PAD_LEFT + point.x * plotW;
           const nodeY = PAD_TOP + plotH - point.y * plotH;
           const isEndpoint = i === 0 || i === customPoints.length - 1;
+          const isSelected = i === selectedCustomPoint;
 
           if (showNodeGuides) {
-            curveCtx.strokeStyle = 'rgba(0, 0, 0, 0.22)';
-            curveCtx.lineWidth = 1;
-            curveCtx.setLineDash([3, 4]);
-            curveCtx.beginPath();
-            curveCtx.moveTo(nodeX, nodeY);
-            curveCtx.lineTo(nodeX, PAD_TOP + plotH);
-            curveCtx.moveTo(nodeX, nodeY);
-            curveCtx.lineTo(PAD_LEFT, nodeY);
-            curveCtx.stroke();
-            curveCtx.setLineDash([]);
+            if (i > 0) {
+              const inX = PAD_LEFT + point.inX * plotW;
+              const inY = PAD_TOP + plotH - point.inY * plotH;
+              curveCtx.strokeStyle = 'rgba(0, 0, 0, 0.22)';
+              curveCtx.lineWidth = 1;
+              curveCtx.setLineDash([]);
+              curveCtx.beginPath();
+              curveCtx.moveTo(nodeX, nodeY);
+              curveCtx.lineTo(inX, inY);
+              curveCtx.stroke();
+
+              curveCtx.fillStyle = i === selectedCustomPoint && selectedCustomHandle === 'in'
+                ? '#111111'
+                : '#ffffff';
+              curveCtx.strokeStyle = '#2255cc';
+              curveCtx.lineWidth = 1.3;
+              curveCtx.beginPath();
+              curveCtx.arc(inX, inY, HANDLE_RADIUS, 0, Math.PI * 2);
+              curveCtx.fill();
+              curveCtx.stroke();
+            }
+
+            if (i < customPoints.length - 1) {
+              const outX = PAD_LEFT + point.outX * plotW;
+              const outY = PAD_TOP + plotH - point.outY * plotH;
+              curveCtx.strokeStyle = 'rgba(0, 0, 0, 0.22)';
+              curveCtx.lineWidth = 1;
+              curveCtx.setLineDash([]);
+              curveCtx.beginPath();
+              curveCtx.moveTo(nodeX, nodeY);
+              curveCtx.lineTo(outX, outY);
+              curveCtx.stroke();
+
+              curveCtx.fillStyle = i === selectedCustomPoint && selectedCustomHandle === 'out'
+                ? '#111111'
+                : '#ffffff';
+              curveCtx.strokeStyle = '#2255cc';
+              curveCtx.lineWidth = 1.3;
+              curveCtx.beginPath();
+              curveCtx.arc(outX, outY, HANDLE_RADIUS, 0, Math.PI * 2);
+              curveCtx.fill();
+              curveCtx.stroke();
+            }
           }
 
           curveCtx.fillStyle = isEndpoint ? '#7a7a8b' : '#2255cc';
@@ -442,8 +633,8 @@
           curveCtx.arc(nodeX, nodeY, 6, 0, Math.PI * 2);
           curveCtx.fill();
 
-          curveCtx.strokeStyle = '#ffffff';
-          curveCtx.lineWidth = 1.5;
+          curveCtx.strokeStyle = isSelected ? '#111111' : '#ffffff';
+          curveCtx.lineWidth = isSelected ? 2.2 : 1.5;
           curveCtx.stroke();
         }
       }
@@ -550,18 +741,34 @@
   }
 
   function onCurvePointerDown(event) {
+    if (event.button === 2) return;
+    customContextMenuOpen = false;
+
     const rect = curveCanvasEl.getBoundingClientRect();
     const cssX = event.clientX - rect.left;
     const cssY = event.clientY - rect.top;
 
     if (customActive) {
+      const hitHandle = hitTestCustomHandle(cssX, cssY);
+      if (hitHandle) {
+        selectedCustomPoint = hitHandle.index;
+        selectedCustomHandle = hitHandle.handle;
+        draggingNode = { type: 'custom-handle', index: hitHandle.index, handle: hitHandle.handle };
+        if (curveCanvasEl?.setPointerCapture) {
+          curveCanvasEl.setPointerCapture(event.pointerId);
+        }
+        return;
+      }
+
       const hitIndex = hitTestCustomPoint(cssX, cssY);
       if (hitIndex === null) {
         selectedCustomPoint = null;
+        selectedCustomHandle = null;
         return;
       }
       selectedCustomPoint = hitIndex;
-      draggingNode = { type: 'custom', index: hitIndex };
+      selectedCustomHandle = null;
+      draggingNode = { type: 'custom-anchor', index: hitIndex };
       if (curveCanvasEl?.setPointerCapture) {
         curveCanvasEl.setPointerCapture(event.pointerId);
       }
@@ -583,11 +790,12 @@
     const cssX = event.clientX - rect.left;
     const cssY = event.clientY - rect.top;
 
-    if (draggingNode?.type === 'custom') {
+    if (draggingNode?.type === 'custom-anchor') {
       const pointIndex = draggingNode.index;
       if (pointIndex === null || pointIndex >= customPoints.length) return;
 
       const next = [...customPoints];
+      const point = next[pointIndex];
       const prevX = pointIndex > 0 ? next[pointIndex - 1].x : 0;
       const nextX = pointIndex < next.length - 1 ? next[pointIndex + 1].x : 1;
 
@@ -602,11 +810,56 @@
         inVal = Math.max(prevX + 0.01, Math.min(nextX - 0.01, inVal));
       }
 
+      const dx = inVal - point.x;
+      const dy = outVal - point.y;
+
       next[pointIndex] = {
+        ...point,
         x: inVal,
         y: outVal,
+        inX: point.inX + dx,
+        inY: point.inY + dy,
+        outX: point.outX + dx,
+        outY: point.outY + dy,
       };
 
+      updateCustomPoints(next);
+      drawCurveCanvas();
+      return;
+    }
+
+    if (draggingNode?.type === 'custom-handle') {
+      const pointIndex = draggingNode.index;
+      const handle = draggingNode.handle;
+      if (pointIndex === null || pointIndex >= customPoints.length) return;
+
+      const next = [...customPoints];
+      const point = next[pointIndex];
+      const xVal = Math.round(valueFromCurveX(cssX) * 100) / 100;
+      const yVal = Math.round(valueFromCurveY(cssY) * 100) / 100;
+      const prevX = pointIndex > 0 ? next[pointIndex - 1].x : point.x;
+      const nextX = pointIndex < next.length - 1 ? next[pointIndex + 1].x : point.x;
+
+      const clampInX = (value) => Math.max(prevX, Math.min(point.x, value));
+      const clampOutX = (value) => Math.max(point.x, Math.min(nextX, value));
+
+      if (handle === 'in') {
+        point.inX = clampInX(xVal);
+        point.inY = yVal;
+        if (point.handleMode === 'mirrored' && pointIndex > 0 && pointIndex < next.length - 1) {
+          point.outX = clampOutX(point.x + (point.x - point.inX));
+          point.outY = Math.min(1, Math.max(0, point.y + (point.y - point.inY)));
+        }
+      } else {
+        point.outX = clampOutX(xVal);
+        point.outY = yVal;
+        if (point.handleMode === 'mirrored' && pointIndex > 0 && pointIndex < next.length - 1) {
+          point.inX = clampInX(point.x - (point.outX - point.x));
+          point.inY = Math.min(1, Math.max(0, point.y - (point.outY - point.y)));
+        }
+      }
+
+      next[pointIndex] = point;
       updateCustomPoints(next);
       drawCurveCanvas();
       return;
@@ -637,7 +890,13 @@
     }
 
     if (customActive) {
-      curveCanvasEl.style.cursor = hitTestCustomPoint(cssX, cssY) !== null ? 'move' : 'default';
+      if (hitTestCustomHandle(cssX, cssY)) {
+        curveCanvasEl.style.cursor = 'crosshair';
+      } else if (hitTestCustomPoint(cssX, cssY) !== null) {
+        curveCanvasEl.style.cursor = 'move';
+      } else {
+        curveCanvasEl.style.cursor = 'default';
+      }
     } else {
       curveCanvasEl.style.cursor = hitTestCurveNode(cssX, cssY) ? 'move' : 'default';
     }
@@ -687,6 +946,7 @@
     customContextMenuOpen = false;
     customContextValueX = null;
     customContextValueY = null;
+    customContextPointIndex = null;
   }
 
   function buildChartCanvas(region) {
@@ -807,13 +1067,37 @@
         class="canvas-context-menu"
         style={`left: ${customContextMenuX}px; top: ${customContextMenuY}px;`}
       >
-        <button
-          type="button"
-          disabled={!canAddCustomPoint}
-          on:click={addCustomPointFromContextMenu}
-        >
-          Add point here
-        </button>
+        {#if isRemovableCustomPoint(customContextPointIndex)}
+          <button
+            type="button"
+            disabled={customPoints[customContextPointIndex].handleMode === 'mirrored'}
+            on:click={(event) => setCustomPointHandleModeFromContextMenu('mirrored', event)}
+          >
+            Handle mode: mirrored
+          </button>
+          <button
+            type="button"
+            disabled={customPoints[customContextPointIndex].handleMode === 'broken'}
+            on:click={(event) => setCustomPointHandleModeFromContextMenu('broken', event)}
+          >
+            Handle mode: broken
+          </button>
+          <button
+            type="button"
+            on:click={removeCustomPointFromContextMenu}
+          >
+            Remove point
+          </button>
+        {/if}
+        {#if customContextValueX !== null && customContextValueY !== null}
+          <button
+            type="button"
+            disabled={!canAddCustomPoint}
+            on:click={addCustomPointFromContextMenu}
+          >
+            Add point here
+          </button>
+        {/if}
       </div>
     {/if}
 
