@@ -8,6 +8,10 @@
   const PAD_BOTTOM = 32;
   const PAD_TOP = 20;
   const PAD_RIGHT = 20;
+  const X_LABEL_SPACING = 8;
+  const Y_LABEL_SPACING = 8;
+  const X_AXIS_LABEL_SPACING = 2;
+  const Y_AXIS_LABEL_SPACING = 7;
 
   const CURVE_COLOR = '#000000';
   const MIN_CONTROL_NODE_COLOR = 'rgb(255, 0, 136)';
@@ -39,7 +43,7 @@
   let draggingNode = null;
   let isReady = false;
 
-  $: curveActive = params.curveType !== 'null' && params.curveType !== 'flat';
+  $: curveActive = params.curveType !== 'null-effect' && params.curveType !== 'flat';
   $: flatActive = params.curveType === 'flat';
 
   $: if (isReady) {
@@ -137,9 +141,9 @@
     if (showGrid) {
       curveCtx.strokeStyle = '#ebebf4';
       curveCtx.lineWidth = 1;
-      for (let i = 0; i <= 5; i += 1) {
-        const gx = PAD_LEFT + (i / 5) * plotW;
-        const gy = PAD_TOP + (i / 5) * plotH;
+      for (let i = 0; i <= 4; i += 1) {
+        const gx = PAD_LEFT + (i / 4) * plotW;
+        const gy = PAD_TOP + (i / 4) * plotH;
 
         curveCtx.beginPath();
         curveCtx.moveTo(gx, PAD_TOP);
@@ -159,37 +163,39 @@
 
       curveCtx.textAlign = 'center';
       curveCtx.textBaseline = 'top';
-      for (let i = 0; i <= 5; i += 1) {
-        const gx = PAD_LEFT + (i / 5) * plotW;
-        curveCtx.fillText((i * 0.2).toFixed(1), gx, PAD_TOP + plotH + 4);
+      for (let i = 0; i <= 4; i += 1) {
+        const gx = PAD_LEFT + (i / 4) * plotW;
+        const label = (i * 0.25).toFixed(2).replace(/\.?0+$/, '');
+        curveCtx.fillText(label, gx, PAD_TOP + plotH + X_LABEL_SPACING);
       }
 
       curveCtx.textAlign = 'right';
       curveCtx.textBaseline = 'middle';
-      for (let i = 0; i <= 5; i += 1) {
-        const gy = PAD_TOP + plotH - (i / 5) * plotH;
-        curveCtx.fillText((i * 0.2).toFixed(1), PAD_LEFT - 4, gy);
+      for (let i = 0; i <= 4; i += 1) {
+        const gy = PAD_TOP + plotH - (i / 4) * plotH;
+        const label = (i * 0.25).toFixed(2).replace(/\.?0+$/, '');
+        curveCtx.fillText(label, PAD_LEFT - Y_LABEL_SPACING, gy);
       }
 
       curveCtx.fillStyle = '#000000';
       curveCtx.font = '9px Segoe UI, sans-serif';
       curveCtx.textAlign = 'center';
       curveCtx.textBaseline = 'bottom';
-      curveCtx.fillText('Input logical pressure', PAD_LEFT + plotW / 2, height - 1);
+      curveCtx.fillText('INPUT', PAD_LEFT + plotW / 2, height - X_AXIS_LABEL_SPACING);
 
       curveCtx.save();
-      curveCtx.translate(9, PAD_TOP + plotH / 2);
+      curveCtx.translate(Y_AXIS_LABEL_SPACING, PAD_TOP + plotH / 2);
       curveCtx.rotate(-Math.PI / 2);
       curveCtx.textAlign = 'center';
       curveCtx.textBaseline = 'top';
-      curveCtx.fillText('Output logical pressure', 0, 0);
+      curveCtx.fillText('OUTPUT', 0, 0);
       curveCtx.restore();
     }
 
     curveCtx.lineWidth = 2;
     curveCtx.lineJoin = 'round';
 
-    if (params.curveType === 'null') {
+    if (params.curveType === 'null-effect') {
       curveCtx.strokeStyle = CURVE_COLOR;
       curveCtx.beginPath();
       curveCtx.moveTo(PAD_LEFT, PAD_TOP + plotH);
