@@ -1,4 +1,5 @@
 <script>
+  import NamedSlider from './NamedSlider.svelte';
   import PositionControls from './PositionControls.svelte';
   import PressureSmoothingControls from './PressureSmoothingControls.svelte';
 
@@ -12,29 +13,21 @@
   export let onAddCustomPoint = () => {};
   export let onRemoveCustomPoint = () => {};
 
-  function formatValue(value) {
-    return Number(value).toFixed(2);
-  }
-
   function patchParams(nextValues) {
     params = { ...params, ...nextValues };
   }
 
-  function handleSliderInput(key, event) {
-    let value = parseFloat(event.currentTarget.value);
+  function handleSliderValue(key, nextValue) {
+    let value = Number(nextValue);
 
     if (key === 'inputMinimum' && value > params.inputMaximum - 0.01) {
       value = params.inputMaximum - 0.01;
-      event.currentTarget.value = String(value);
     } else if (key === 'inputMaximum' && value < params.inputMinimum + 0.01) {
       value = params.inputMinimum + 0.01;
-      event.currentTarget.value = String(value);
     } else if (key === 'minimum' && value > params.maximum) {
       value = params.maximum;
-      event.currentTarget.value = String(value);
     } else if (key === 'maximum' && value < params.minimum) {
       value = params.minimum;
-      event.currentTarget.value = String(value);
     }
 
     patchParams({ [key]: value });
@@ -110,122 +103,115 @@
     {/if}
 
     {#if flatActive}
-      <div class="param">
-        <div class="param-header">
-          <span class="param-name">FlatLevel</span>
-          <span class="param-value">{formatValue(params.flatLevel)}</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={params.flatLevel}
-          on:input={(e) => handleSliderInput('flatLevel', e)}
-        >
-      </div>
+      <NamedSlider
+        name="FlatLevel"
+        value={params.flatLevel}
+        min={0}
+        max={1}
+        step={0.01}
+        sliderMin={0}
+        sliderMax={1}
+        sliderStep={0.01}
+        valueDecimals={2}
+        valuePrecision={2}
+        onValueChange={(value) => handleSliderValue('flatLevel', value)}
+      />
     {/if}
 
     {#if curveActive}
-      <div class="param">
-        <div class="param-header">
-          <span class="param-name">CurveAmount</span>
-          <span class="param-value">{formatValue(params.softness)}</span>
-        </div>
-        <input
-          type="range"
-          min="-0.9"
-          max="0.9"
-          step="0.01"
-          value={params.softness}
-          on:input={(e) => handleSliderInput('softness', e)}
-        >
-      </div>
+      <NamedSlider
+        name="CurveAmount"
+        value={params.softness}
+        min={-0.9}
+        max={0.9}
+        step={0.01}
+        sliderMin={-0.9}
+        sliderMax={0.9}
+        sliderStep={0.01}
+        valueDecimals={2}
+        valuePrecision={2}
+        onValueChange={(value) => handleSliderValue('softness', value)}
+      />
     {/if}
 
     {#if false}
-      <div class="param">
-        <div class="param-header">
-          <span class="param-name">Transition</span>
-          <span class="param-value">{formatValue(params.transitionWidth)}</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="0.5"
-          step="0.01"
-          value={params.transitionWidth}
-          on:input={(e) => handleSliderInput('transitionWidth', e)}
-        >
-      </div>
+      <NamedSlider
+        name="Transition"
+        value={params.transitionWidth}
+        min={0}
+        max={0.5}
+        step={0.01}
+        sliderMin={0}
+        sliderMax={0.5}
+        sliderStep={0.01}
+        valueDecimals={2}
+        valuePrecision={2}
+        onValueChange={(value) => handleSliderValue('transitionWidth', value)}
+      />
     {/if}
 
     {#if curveActive}
-      <div class="param">
-        <div class="param-header">
-          <span class="param-name">InputMinimum</span>
-          <span class="param-value">{formatValue(params.inputMinimum)}</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={params.inputMinimum}
-          on:input={(e) => handleSliderInput('inputMinimum', e)}
-        >
-      </div>
+      <NamedSlider
+        name="InputMinimum"
+        value={params.inputMinimum}
+        min={0}
+        max={1}
+        step={0.01}
+        sliderMin={0}
+        sliderMax={1}
+        sliderStep={0.01}
+        valueDecimals={2}
+        valuePrecision={2}
+        onValueChange={(value) => handleSliderValue('inputMinimum', value)}
+      />
     {/if}
 
     {#if curveActive}
-      <div class="param">
-        <div class="param-header">
-          <span class="param-name">InputMaximum</span>
-          <span class="param-value">{formatValue(params.inputMaximum)}</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={params.inputMaximum}
-          on:input={(e) => handleSliderInput('inputMaximum', e)}
-        >
-      </div>
+      <NamedSlider
+        name="InputMaximum"
+        value={params.inputMaximum}
+        min={0}
+        max={1}
+        step={0.01}
+        sliderMin={0}
+        sliderMax={1}
+        sliderStep={0.01}
+        valueDecimals={2}
+        valuePrecision={2}
+        onValueChange={(value) => handleSliderValue('inputMaximum', value)}
+      />
     {/if}
 
     {#if curveActive}
-      <div class="param">
-        <div class="param-header">
-          <span class="param-name">OutputMinimum</span>
-          <span class="param-value">{formatValue(params.minimum)}</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={params.minimum}
-          on:input={(e) => handleSliderInput('minimum', e)}
-        >
-      </div>
+      <NamedSlider
+        name="OutputMinimum"
+        value={params.minimum}
+        min={0}
+        max={1}
+        step={0.01}
+        sliderMin={0}
+        sliderMax={1}
+        sliderStep={0.01}
+        valueDecimals={2}
+        valuePrecision={2}
+        onValueChange={(value) => handleSliderValue('minimum', value)}
+      />
     {/if}
 
     {#if curveActive}
-      <div class="param">
-        <div class="param-header">
-          <span class="param-name">OutputMaximum</span>
-          <span class="param-value">{formatValue(params.maximum)}</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={params.maximum}
-          on:input={(e) => handleSliderInput('maximum', e)}
-        >
-      </div>
+      <NamedSlider
+        name="OutputMaximum"
+        value={params.maximum}
+        min={0}
+        max={1}
+        step={0.01}
+        sliderMin={0}
+        sliderMax={1}
+        sliderStep={0.01}
+        valueDecimals={2}
+        valuePrecision={2}
+        onValueChange={(value) => handleSliderValue('maximum', value)}
+      />
     {/if}
 
     {#if params.curveType !== 'null-effect'}
