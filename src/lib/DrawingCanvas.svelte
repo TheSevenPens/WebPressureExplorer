@@ -4,8 +4,6 @@
 
   const MAX_BRUSH_SIZE = 40;
   const CANVAS_BG = '#f5f5f0';
-  const MAX_DPR = 2;
-  const MAX_DEVICE_DIMENSION = 4096;
 
   const initialInfo = {
     type: '---',
@@ -26,7 +24,6 @@
   let toolbarEl;
   let drawCanvasEl;
   let drawCtx;
-  let drawDpr = 1;
   let resizeObserver;
   let resizeRafId = 0;
   let lastDeviceWidth = 0;
@@ -36,9 +33,11 @@
 
   function pointerToCanvasPos(pointerEvent) {
     const rect = drawCanvasEl.getBoundingClientRect();
+    const scaleX = rect.width > 0 ? drawCanvasEl.width / rect.width : 1;
+    const scaleY = rect.height > 0 ? drawCanvasEl.height / rect.height : 1;
     return {
-      x: pointerEvent.clientX - rect.left,
-      y: pointerEvent.clientY - rect.top,
+      x: (pointerEvent.clientX - rect.left) * scaleX,
+      y: (pointerEvent.clientY - rect.top) * scaleY,
     };
   }
 
@@ -53,15 +52,15 @@
   function resizeDrawCanvas() {
     if (!drawCanvasEl || !drawCtx || !drawPanelEl || !toolbarEl) return;
 
-    // Read the final CSS layout size of the canvas to avoid width drift.
-    const rect = drawCanvasEl.getBoundingClientRect();
-    const cssWidth = Math.max(1, Math.round(rect.width));
-    const cssHeight = Math.max(1, Math.round(rect.height));
+    // Use container geometry so the canvas always fills the full right panel.
+    const cssWidth = Math.max(1, drawPanelEl.clientWidth);
+    const cssHeight = Math.max(1, drawPanelEl.clientHeight - toolbarEl.offsetHeight);
 
-    drawDpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
+    drawCanvasEl.style.width = `${cssWidth}px`;
+    drawCanvasEl.style.height = `${cssHeight}px`;
 
-    const nextDeviceWidth = Math.max(1, Math.min(MAX_DEVICE_DIMENSION, Math.round(cssWidth * drawDpr)));
-    const nextDeviceHeight = Math.max(1, Math.min(MAX_DEVICE_DIMENSION, Math.round(cssHeight * drawDpr)));
+    const nextDeviceWidth = cssWidth;
+    const nextDeviceHeight = cssHeight;
 
     // Avoid resetting backing store when size did not actually change.
     if (nextDeviceWidth === lastDeviceWidth && nextDeviceHeight === lastDeviceHeight) {
@@ -75,14 +74,13 @@
     drawCanvasEl.height = nextDeviceHeight;
 
     drawCtx.setTransform(1, 0, 0, 1, 0, 0);
-    drawCtx.scale(drawDpr, drawDpr);
     clearDrawCanvas();
   }
 
   function clearDrawCanvas() {
     if (!drawCanvasEl || !drawCtx) return;
-    const cssWidth = Math.max(1, drawCanvasEl.width / drawDpr);
-    const cssHeight = Math.max(1, drawCanvasEl.height / drawDpr);
+    const cssWidth = Math.max(1, drawCanvasEl.width);
+    const cssHeight = Math.max(1, drawCanvasEl.height);
     drawCtx.fillStyle = CANVAS_BG;
     drawCtx.fillRect(0, 0, cssWidth, cssHeight);
   }
