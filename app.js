@@ -23,7 +23,6 @@ const DEFAULT_PARAMS = {
   softness: 0.0,
   minimum:  0,
   maximum:  100,
-  invert:   false,
 };
 
 const params = { ...DEFAULT_PARAMS };
@@ -43,7 +42,7 @@ const params = { ...DEFAULT_PARAMS };
 // then clamped to [minimum/100, maximum/100]
 
 function applyPressureCurve(x) {
-  const { gain, softness, minimum, maximum, invert } = params;
+  const { gain, softness, minimum, maximum } = params;
   const minOut = minimum / 100;
   const maxOut = maximum / 100;
 
@@ -53,43 +52,44 @@ function applyPressureCurve(x) {
     ? (1 - softness)
     : (1 / (1 + softness));
 
-  const base   = x * gain;
-  const sign   = invert ? -1 : 1;
-  const offset = invert ? 1  : 0;
-
-  const y = sign * Math.pow(base, exponent) + offset;
+  const y = Math.pow(x * gain, exponent);
   return Math.min(Math.max(minOut, y), maxOut);
 }
 
 
 // ── Curve Canvas ─────────────────────────────────────────────
 
+const curvePanel  = document.getElementById('curve-panel');
 const curveCanvas = document.getElementById('curve-canvas');
 const curveCtx    = curveCanvas.getContext('2d');
 
-const CURVE_SIZE = 240;
+const DPR        = window.devicePixelRatio || 1;
 const PAD_LEFT   = 30;   // room for Y-axis labels
 const PAD_BOTTOM = 20;   // room for X-axis labels
 const PAD_TOP    = 8;
 const PAD_RIGHT  = 8;
 
-// HiDPI support
-const DPR = window.devicePixelRatio || 1;
-curveCanvas.width        = CURVE_SIZE * DPR;
-curveCanvas.height       = CURVE_SIZE * DPR;
-curveCanvas.style.width  = CURVE_SIZE + 'px';
-curveCanvas.style.height = CURVE_SIZE + 'px';
-curveCtx.scale(DPR, DPR);
-
-const plotW = CURVE_SIZE - PAD_LEFT - PAD_RIGHT;
-const plotH = CURVE_SIZE - PAD_TOP  - PAD_BOTTOM;
-
 // Current raw input pressure for the live indicator dot (null = hidden)
 let livePressure = null;
 
+// Resize the curve canvas to fill the panel width (keeping it square)
+function resizeCurveCanvas() {
+  const size = Math.max(160, curvePanel.clientWidth - 24); // 12px padding each side
+  curveCanvas.style.width  = size + 'px';
+  curveCanvas.style.height = size + 'px';
+  curveCanvas.width        = Math.round(size * DPR);
+  curveCanvas.height       = Math.round(size * DPR);
+  curveCtx.scale(DPR, DPR); // reset after canvas resize
+  drawCurveCanvas();
+}
+
+new ResizeObserver(resizeCurveCanvas).observe(curvePanel);
+
 function drawCurveCanvas() {
-  const W = CURVE_SIZE;
-  const H = CURVE_SIZE;
+  const W     = curveCanvas.width  / DPR;
+  const H     = curveCanvas.height / DPR;
+  const plotW = W - PAD_LEFT - PAD_RIGHT;
+  const plotH = H - PAD_TOP  - PAD_BOTTOM;
 
   // Background
   curveCtx.fillStyle = '#13131f';
@@ -139,7 +139,7 @@ function drawCurveCanvas() {
   curveCtx.font         = '9px Segoe UI, sans-serif';
   curveCtx.textAlign    = 'center';
   curveCtx.textBaseline = 'bottom';
-  curveCtx.fillText('Input Pressure', PAD_LEFT + plotW / 2, CURVE_SIZE - 1);
+  curveCtx.fillText('Input Pressure', PAD_LEFT + plotW / 2, H - 1);
 
   // Diagonal reference (linear / identity)
   curveCtx.strokeStyle = '#2a2a40';
@@ -326,18 +326,12 @@ Object.keys(sliders).forEach(key => {
   });
 });
 
-document.getElementById('toggle-invert').addEventListener('change', (e) => {
-  params.invert = e.target.checked;
-  drawCurveCanvas();
-});
-
 document.getElementById('btn-reset').addEventListener('click', () => {
   Object.assign(params, DEFAULT_PARAMS);
   sliders.gain.value     = DEFAULT_PARAMS.gain;
   sliders.softness.value = DEFAULT_PARAMS.softness;
   sliders.minimum.value  = DEFAULT_PARAMS.minimum;
   sliders.maximum.value  = DEFAULT_PARAMS.maximum;
-  document.getElementById('toggle-invert').checked = DEFAULT_PARAMS.invert;
   Object.keys(valueEls).forEach(k => {
     valueEls[k].textContent = formatValue(k, DEFAULT_PARAMS[k]);
   });
@@ -361,4 +355,4 @@ document.addEventListener('keydown', (e) => {
 
 window.addEventListener('resize', resizeDrawCanvas);
 resizeDrawCanvas();
-drawCurveCanvas();
+// Note: curve canvas is initialised by its ResizeObserver on first layout
