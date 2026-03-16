@@ -67,7 +67,11 @@ const PAD_BOTTOM = 32;   // room for X-axis labels
 const PAD_TOP    = 20;
 const PAD_RIGHT  = 20;
 
-const CURVE_COLOR = '#3366ee';   // curve color (all three segments)
+const CURVE_COLOR              = '#000000';           // curve color (all three segments)
+const MIN_CONTROL_NODE_COLOR   = 'rgb(255, 0, 136)';           // minimum control node fill
+const MIN_CONTROL_NODE_GUIDE   = 'rgba(0, 0, 0, 0.25)';  // minimum control node guide lines
+const MAX_CONTROL_NODE_COLOR   = '#00d0ff';           // maximum control node fill
+const MAX_CONTROL_NODE_GUIDE   = 'rgba(0, 0, 0, 0.25)'; // maximum control node guide lines
 
 // Current raw input pressure for the live indicator dot (null = hidden)
 let livePressure = null;
@@ -78,9 +82,16 @@ let showGrid = true;
 // Whether axis tick labels are drawn
 let showLabels = true;
 
+// Whether control node guide lines are drawn
+let showNodeGuides = true;
+
+let _lastCurveSize = 0;
+
 // Resize the curve canvas to fill the panel width
 function resizeCurveCanvas() {
-  const size = Math.max(160, curvePanel.clientWidth - 24); // 12px padding each side
+  const size = Math.max(160, curvePanel.clientWidth - 24);
+  if (size === _lastCurveSize) { drawCurveCanvas(); return; }
+  _lastCurveSize = size; // 12px padding each side
   curveCanvas.style.width  = size + 'px';
   curveCanvas.style.height = size + 'px';
   curveCanvas.width        = Math.round(size * DPR);
@@ -164,23 +175,23 @@ function drawCurveCanvas() {
   }
 
   // Pressure curve — three segments:
-  //   1. Left flat:    x=[0, inputMinimum]           y=outputMinimum
-  //   2. Active curve: x=[inputMinimum, inputMaximum]
-  //   3. Right flat:   x=[inputMaximum, 1]           y=outputMaximum
+  //   1. Inbound:  x=[0, inputMinimum]           y=outputMinimum  (flat)
+  //   2. Middle:   x=[inputMinimum, inputMaximum]                 (shaped by CurveAmount)
+  //   3. Outbound: x=[inputMaximum, 1]           y=outputMaximum  (flat)
   const inMin  = params.inputMinimum,  inMax  = params.inputMaximum;
   const outMin = params.minimum,       outMax = params.maximum;
 
   curveCtx.lineWidth = 2;
   curveCtx.lineJoin  = 'round';
 
-  // Segment 1 — left flat
+  // Inbound segment
   curveCtx.strokeStyle = CURVE_COLOR;
   curveCtx.beginPath();
   curveCtx.moveTo(PAD_LEFT,                      PAD_TOP + plotH - outMin * plotH);
   curveCtx.lineTo(PAD_LEFT + inMin * plotW,      PAD_TOP + plotH - outMin * plotH);
   curveCtx.stroke();
 
-  // Segment 2 — active curve
+  // Middle segment
   curveCtx.strokeStyle = CURVE_COLOR;
   curveCtx.beginPath();
   const pxStart = Math.round(inMin * plotW);
@@ -196,30 +207,32 @@ function drawCurveCanvas() {
   }
   curveCtx.stroke();
 
-  // Segment 3 — right flat
+  // Outbound segment
   curveCtx.strokeStyle = CURVE_COLOR;
   curveCtx.beginPath();
   curveCtx.moveTo(PAD_LEFT + inMax * plotW,      PAD_TOP + plotH - outMax * plotH);
   curveCtx.lineTo(PAD_LEFT + plotW,              PAD_TOP + plotH - outMax * plotH);
   curveCtx.stroke();
 
-  // Combined nodes: A = (inputMinimum, outputMinimum), B = (inputMaximum, outputMaximum)
+  // Control nodes
   const nodes = [
-    { key: 'a', nx: PAD_LEFT + params.inputMinimum * plotW, ny: PAD_TOP + plotH - params.minimum * plotH,      color: '#e06060', guide: 'rgba(220,80,80,0.25)'    },
-    { key: 'b', nx: PAD_LEFT + params.inputMaximum * plotW, ny: PAD_TOP + plotH - params.maximum * plotH,      color: '#3377dd', guide: 'rgba(50,100,220,0.25)'    },
+    { key: 'a', nx: PAD_LEFT + params.inputMinimum * plotW, ny: PAD_TOP + plotH - params.minimum * plotH, color: MIN_CONTROL_NODE_COLOR, guide: MIN_CONTROL_NODE_GUIDE },  // minimum control node
+    { key: 'b', nx: PAD_LEFT + params.inputMaximum * plotW, ny: PAD_TOP + plotH - params.maximum * plotH, color: MAX_CONTROL_NODE_COLOR, guide: MAX_CONTROL_NODE_GUIDE },  // maximum control node
   ];
   for (const { nx, ny, color, guide } of nodes) {
     // Guide lines: down to x-axis, left to y-axis
-    curveCtx.strokeStyle = guide;
-    curveCtx.lineWidth   = 1;
-    curveCtx.setLineDash([3, 4]);
-    curveCtx.beginPath();
-    curveCtx.moveTo(nx, ny);
-    curveCtx.lineTo(nx, PAD_TOP + plotH); // vertical down
-    curveCtx.moveTo(nx, ny);
-    curveCtx.lineTo(PAD_LEFT, ny);        // horizontal left
-    curveCtx.stroke();
-    curveCtx.setLineDash([]);
+    if (showNodeGuides) {
+      curveCtx.strokeStyle = guide;
+      curveCtx.lineWidth   = 1;
+      curveCtx.setLineDash([3, 4]);
+      curveCtx.beginPath();
+      curveCtx.moveTo(nx, ny);
+      curveCtx.lineTo(nx, PAD_TOP + plotH); // vertical down
+      curveCtx.moveTo(nx, ny);
+      curveCtx.lineTo(PAD_LEFT, ny);        // horizontal left
+      curveCtx.stroke();
+      curveCtx.setLineDash([]);
+    }
 
     // Node circle
     curveCtx.fillStyle = color;
@@ -322,7 +335,7 @@ curveCanvas.addEventListener('pointermove', (e) => {
     let outVal = Math.round(valueFromCurveY(cssY) * 100) / 100;
 
     if (draggingNode === 'a') {
-      // Node A: clamp so it doesn't cross Node B
+      // Minimum control node: clamp so it doesn't cross the maximum control node
       inVal  = Math.min(inVal,  params.inputMaximum - 0.01);
       outVal = Math.min(outVal, params.maximum);
       params.inputMinimum = inVal;
@@ -332,7 +345,7 @@ curveCanvas.addEventListener('pointermove', (e) => {
       valueEls.inputMinimum.textContent = formatValue(inVal);
       valueEls.minimum.textContent      = formatValue(outVal);
     } else {
-      // Node B: clamp so it doesn't cross Node A
+      // Maximum control node: clamp so it doesn't cross the minimum control node
       inVal  = Math.max(inVal,  params.inputMinimum + 0.01);
       outVal = Math.max(outVal, params.minimum);
       params.inputMaximum = inVal;
@@ -526,8 +539,9 @@ document.getElementById('btn-reset').addEventListener('click', () => {
 document.getElementById('btn-clear').addEventListener('click', clearDrawCanvas);
 
 const checkboxActions = {
-  'chk-grid':   (v) => { showGrid   = v; },
-  'chk-labels': (v) => { showLabels = v; },
+  'chk-grid':        (v) => { showGrid       = v; },
+  'chk-labels':      (v) => { showLabels     = v; },
+  'chk-node-guides': (v) => { showNodeGuides = v; },
 };
 Object.entries(checkboxActions).forEach(([id, apply]) => {
   document.getElementById(id).addEventListener('change', (e) => {
