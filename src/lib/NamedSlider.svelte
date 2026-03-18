@@ -20,6 +20,35 @@
   let contextMenuX = 0;
   let contextMenuY = 0;
 
+  let editing = false;
+  let editRawValue = '';
+
+  function startEdit() {
+    editRawValue = formatValue(value);
+    editing = true;
+  }
+
+  function commitEdit() {
+    editing = false;
+    const parsed = parseFloat(editRawValue);
+    if (!Number.isNaN(parsed)) {
+      applyValue(parsed);
+    }
+  }
+
+  function handleEditKeyDown(event) {
+    if (event.key === 'Enter') {
+      event.currentTarget.blur();
+    } else if (event.key === 'Escape') {
+      editing = false;
+    }
+  }
+
+  function autofocus(node) {
+    node.focus();
+    node.select();
+  }
+
   function clamp(valueToClamp, minValue, maxValue) {
     return Math.min(maxValue, Math.max(minValue, valueToClamp));
   }
@@ -99,7 +128,18 @@
 <div class="param">
   <div class="param-header">
     <span class="param-name">{name}</span>
-    <span class="param-value">{formatValue(value)}</span>
+    {#if editing}
+      <input
+        class="param-value-edit"
+        type="text"
+        bind:value={editRawValue}
+        on:blur={commitEdit}
+        on:keydown={handleEditKeyDown}
+        use:autofocus
+      >
+    {:else}
+      <span class="param-value" on:click={startEdit}>{formatValue(value)}</span>
+    {/if}
   </div>
   <input
     class="named-slider-input"
@@ -126,6 +166,23 @@
 {/if}
 
 <style>
+  .param-value {
+    cursor: text;
+  }
+
+  .param-value-edit {
+    width: 52px;
+    font-size: 11px;
+    font-family: inherit;
+    text-align: right;
+    border: 1px solid #aaaacc;
+    border-radius: 3px;
+    padding: 0 3px;
+    background: #ffffff;
+    color: #222;
+    outline: none;
+  }
+
   .named-slider-input {
     width: 100%;
     height: 4px;
