@@ -1,4 +1,6 @@
 <script>
+  import { onMount } from 'svelte';
+
   export let name = 'Value';
   export let value = 0;
   export let min = 0;
@@ -11,7 +13,12 @@
   export let curveExponent = 1;
   export let valueDecimals = 2;
   export let valuePrecision = null;
+  export let defaultValue = value;
   export let onValueChange = () => {};
+
+  let contextMenuOpen = false;
+  let contextMenuX = 0;
+  let contextMenuY = 0;
 
   function clamp(valueToClamp, minValue, maxValue) {
     return Math.min(maxValue, Math.max(minValue, valueToClamp));
@@ -60,6 +67,33 @@
     }
     onValueChange(nextValue);
   }
+
+  function applyValue(nextValue) {
+    let v = clamp(nextValue, min, max);
+    if (typeof valuePrecision === 'number' && Number.isFinite(valuePrecision)) {
+      const scale = 10 ** valuePrecision;
+      v = Math.round(v * scale) / scale;
+    }
+    onValueChange(v);
+    contextMenuOpen = false;
+  }
+
+  function handleContextMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    contextMenuX = event.clientX;
+    contextMenuY = event.clientY;
+    contextMenuOpen = true;
+  }
+
+  function closeContextMenu() {
+    contextMenuOpen = false;
+  }
+
+  onMount(() => {
+    document.addEventListener('click', closeContextMenu);
+    return () => document.removeEventListener('click', closeContextMenu);
+  });
 </script>
 
 <div class="param">
@@ -75,8 +109,21 @@
     step={sliderStep}
     value={valueToSlider(value)}
     on:input={handleInput}
+    on:contextmenu={handleContextMenu}
   >
 </div>
+
+{#if contextMenuOpen}
+  <div
+    class="slider-context-menu"
+    style="left: {contextMenuX}px; top: {contextMenuY}px;"
+    on:click|stopPropagation
+  >
+    <button type="button" on:click={() => applyValue(min)}>Min</button>
+    <button type="button" on:click={() => applyValue(max)}>Max</button>
+    <button type="button" on:click={() => applyValue(defaultValue)}>Reset</button>
+  </div>
+{/if}
 
 <style>
   .named-slider-input {
@@ -116,5 +163,32 @@
     border: 0;
     border-radius: 50%;
     background: var(--slider-accent);
+  }
+
+  .slider-context-menu {
+    position: fixed;
+    z-index: 1000;
+    background: #ffffff;
+    border: 1px solid #d0d0d8;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    min-width: 80px;
+    padding: 3px 0;
+  }
+
+  .slider-context-menu button {
+    background: none;
+    border: none;
+    padding: 5px 12px;
+    text-align: left;
+    font-size: 12px;
+    cursor: pointer;
+    color: #222;
+  }
+
+  .slider-context-menu button:hover {
+    background: #f0f0f8;
   }
 </style>
