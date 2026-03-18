@@ -1,5 +1,6 @@
 <script>
   import { onMount } from 'svelte';
+  import { applyPressureCurve } from './curveMath';
 
   const PAD_LEFT = 42;
   const PAD_BOTTOM = 32;
@@ -13,6 +14,8 @@
   const RESPONSE_COLOR = '#cc6600';
 
   export let data = null;
+  export let params = null;
+  export let showCurveEffect = true;
 
   let canvasEl;
   let ctx;
@@ -23,6 +26,8 @@
 
   $: if (isReady) {
     data;
+    params;
+    showCurveEffect;
     draw();
   }
 
@@ -101,10 +106,17 @@
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('LOGICAL %', 0, 0);
+    ctx.fillText(showCurveEffect && params ? 'OUTPUT %' : 'LOGICAL %', 0, 0);
     ctx.restore();
 
     if (!records.length || maxGf === 0) return;
+
+    const getY = (logPct) => {
+      if (showCurveEffect && params) {
+        return applyPressureCurve(logPct / 100, params);
+      }
+      return logPct / 100;
+    };
 
     // Connecting line
     ctx.strokeStyle = RESPONSE_COLOR;
@@ -114,7 +126,7 @@
     let first = true;
     for (const [gf, logPct] of records) {
       const cx = PAD_LEFT + (gf / maxGf) * plotW;
-      const cy = PAD_TOP + plotH - (logPct / 100) * plotH;
+      const cy = PAD_TOP + plotH - getY(logPct) * plotH;
       if (first) { ctx.moveTo(cx, cy); first = false; }
       else ctx.lineTo(cx, cy);
     }
@@ -124,7 +136,7 @@
     ctx.fillStyle = RESPONSE_COLOR;
     for (const [gf, logPct] of records) {
       const cx = PAD_LEFT + (gf / maxGf) * plotW;
-      const cy = PAD_TOP + plotH - (logPct / 100) * plotH;
+      const cy = PAD_TOP + plotH - getY(logPct) * plotH;
       ctx.beginPath();
       ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
       ctx.fill();

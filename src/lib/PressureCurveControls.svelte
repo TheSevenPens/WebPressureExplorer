@@ -14,6 +14,7 @@
   export let onAddCustomPoint = () => {};
   export let onRemoveCustomPoint = () => {};
   export let onResponseDataChange = () => {};
+  export let onResponseShowCurveEffectChange = () => {};
 
   function patchParams(nextValues) {
     params = { ...params, ...nextValues };
@@ -220,6 +221,9 @@
       <button id="btn-reset" on:click={resetToDefaults}>Reset curve</button>
     {/if}
 
-    <PressureResponsePanel onDataChange={onResponseDataChange} />
+    <PressureResponsePanel
+      onDataChange={onResponseDataChange}
+      onShowCurveEffectChange={onResponseShowCurveEffectChange}
+    />
   </div>
 </div>

@@ -4,6 +4,13 @@
   import wap0050 from '../../sample-pressure-response/WAP.0050_2025-11-10.json';
 
   export let onDataChange = () => {};
+  export let onShowCurveEffectChange = () => {};
+
+  let showCurveEffect = true;
+
+  function handleShowCurveEffectChange() {
+    onShowCurveEffectChange(showCurveEffect);
+  }
 
   const SAMPLES = [
     { label: 'WAP.0038 — KP-504E (unit 1)', data: wap0038 },
@@ -96,6 +103,15 @@
       </div>
 
       {#if loadedData}
+        <label class="response-checkbox">
+          <input
+            type="checkbox"
+            bind:checked={showCurveEffect}
+            on:change={handleShowCurveEffectChange}
+          />
+          Show effect of curve
+        </label>
+
         <div class="response-info">
           <span class="response-info-id">{loadedData.inventoryid} — {loadedData.brand} {loadedData.pen}</span>
           <span>{loadedData.tablet} · {loadedData.date} · {loadedData.records.length} pts</span>
@@ -152,6 +168,16 @@
     font-size: 11px;
     padding: 2px 7px;
     cursor: pointer;
+  }
+
+  .response-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #444;
+    cursor: pointer;
+    user-select: none;
   }
 
   .response-info {

@@ -28,9 +28,14 @@
   export let defaultParams;
 
   let pressureResponseData = null;
+  let showResponseCurveEffect = true;
 
   function onResponseDataChange(data) {
     pressureResponseData = data;
+  }
+
+  function onResponseShowCurveEffectChange(value) {
+    showResponseCurveEffect = value;
   }
 
   let showGrid = true;
@@ -1136,7 +1141,11 @@
     />
 
     {#if pressureResponseData}
-      <PressureResponseChart data={pressureResponseData} />
+      <PressureResponseChart
+        data={pressureResponseData}
+        {params}
+        showCurveEffect={showResponseCurveEffect}
+      />
     {/if}
   </div>
 
@@ -1151,5 +1160,6 @@
     onAddCustomPoint={addCustomPoint}
     onRemoveCustomPoint={removeCustomPoint}
     {onResponseDataChange}
+    {onResponseShowCurveEffectChange}
   />
 </div>
