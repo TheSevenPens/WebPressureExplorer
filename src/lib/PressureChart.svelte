@@ -3,6 +3,7 @@
   import { applyPressureCurve } from './curveMath';
   import PressureChartFormat from './PressureChartFormat.svelte';
   import PressureCurveControls from './PressureCurveControls.svelte';
+  import PressureResponseChart from './PressureResponseChart.svelte';
 
   const PAD_LEFT = 42;
   const PAD_BOTTOM = 32;
@@ -25,6 +26,17 @@
   export let params;
   export let livePressure = null;
   export let defaultParams;
+
+  let pressureResponseData = null;
+  let showResponseCurveEffect = true;
+
+  function onResponseDataChange(data) {
+    pressureResponseData = data;
+  }
+
+  function onResponseShowCurveEffectChange(value) {
+    showResponseCurveEffect = value;
+  }
 
   let showGrid = true;
   let showLabels = true;
@@ -1127,6 +1139,14 @@
       {curveActive}
       onToggle={drawCurveCanvas}
     />
+
+    {#if pressureResponseData}
+      <PressureResponseChart
+        data={pressureResponseData}
+        {params}
+        showCurveEffect={showResponseCurveEffect}
+      />
+    {/if}
   </div>
 
   <PressureCurveControls
@@ -1139,5 +1159,7 @@
     {canRemoveCustomPoint}
     onAddCustomPoint={addCustomPoint}
     onRemoveCustomPoint={removeCustomPoint}
+    {onResponseDataChange}
+    {onResponseShowCurveEffectChange}
   />
 </div>
