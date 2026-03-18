@@ -4,7 +4,11 @@ description: Agreed names for UI elements in WebPressureExplorer that lack expli
 type: project
 ---
 
-**Live pressure indicator** — the dot that moves along the pressure curve in PressureChart showing the current pen pressure in real time. Fed by the `livePressure` prop/state variable. Has no dedicated named constant in code; drawn inline at the end of `drawCurveCanvas()`.
+There are two live pressure indicators drawn inline at the end of `drawCurveCanvas()` in PressureChart:
 
-**Why:** User wants a consistent term to use when discussing future enhancements to this element.
-**How to apply:** Always refer to this dot as the "live pressure indicator" in conversation and documentation.
+**Raw pressure indicator** — purple (`#8833cc`), filled circle. Tracks `liveRawPressure` = raw `event.pressure` with no processing. Shows where the unmodified pen input sits on the curve.
+
+**Effective pressure indicator** — green (`#14a050`), filled circle. Tracks `livePressure` = `preCurvePressure` (smoothed+curved output). Shows what actually drives the brush.
+
+**Why:** User wants consistent terms for discussing future enhancements to these elements.
+**How to apply:** Use "raw pressure indicator" and "effective pressure indicator" in conversation and documentation. The collective term is "live pressure indicators".
