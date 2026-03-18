@@ -12,16 +12,18 @@ WebPressureExplorer is a Svelte 5 web application for exploring and visualizing 
 
 ```
 App.svelte (root — state owner)
-├── PressureChart.svelte           (left panel: curve visualization & interaction)
-│   ├── PressureChartFormat.svelte (display toggles: grid, labels, nodes)
-│   └── PressureCurveControls.svelte (curve type + parameter sliders)
-│       ├── PositionControls.svelte  (position EMA smoothing)
+├── PressureChart.svelte               (left panel: curve visualization & interaction)
+│   ├── PressureChartFormat.svelte     (display toggles: grid, labels, nodes)
+│   ├── PressureResponseChart.svelte   (separate chart for pen hardware response data)
+│   └── PressureCurveControls.svelte   (curve type + parameter sliders)
+│       ├── PositionControls.svelte      (position EMA smoothing)
 │       │   └── NamedSlider.svelte
 │       ├── PressureSmoothingControls.svelte (pressure EMA + order)
 │       │   └── NamedSlider.svelte
-│       └── NamedSlider.svelte       (multiple instances for curve params)
-└── DrawingCanvas.svelte           (right panel: drawing area)
-    └── DrawingCanvasHeader.svelte  (toolbar: info display + clear button)
+│       ├── NamedSlider.svelte           (multiple instances for curve params)
+│       └── PressureResponsePanel.svelte (load/select pen response data)
+└── DrawingCanvas.svelte               (right panel: drawing area)
+    └── DrawingCanvasHeader.svelte     (toolbar: info display + clear button)
 ```
 
 ---
@@ -50,14 +52,19 @@ App.svelte (root — state owner)
 - `livePressure` — position of the live pressure indicator on the curve
 - `defaultParams` — used by the reset button
 
+**Internal state:**
+- `pressureResponseData` — loaded pen hardware response dataset (null by default)
+- `showResponseCurveEffect` — mirrors the "show effect of curve" checkbox in `PressureResponsePanel`
+
 **Responsibilities:**
 - Renders the curve, grid, axis labels, control nodes, and bezier handles via Canvas 2D
 - Handles pointer events for dragging control points and handles (custom curve mode)
 - Provides a right-click context menu to insert/delete custom curve points
 - Exports the chart as PNG (copy to clipboard) or JPEG (save file)
-- Hosts `PressureChartFormat` and `PressureCurveControls` as children
+- Hosts `PressureChartFormat`, `PressureCurveControls`, and (conditionally) `PressureResponseChart`
+- Owns response data state; receives change callbacks from `PressureResponsePanel` via `PressureCurveControls` and forwards `params` + `showCurveEffect` to `PressureResponseChart`
 
-**Dependencies:** [curveMath.js](#curvemathjs), `PressureChartFormat`, `PressureCurveControls`
+**Dependencies:** [curveMath.js](#curvemathjs), `PressureChartFormat`, `PressureCurveControls`, `PressureResponseChart`
 
 ---
 
@@ -75,7 +82,7 @@ App.svelte (root — state owner)
 
 **Props (bindable):** `params`, `defaultParams`
 **Props (read):** `curveActive`, `flatActive`, `customActive`, `canAddCustomPoint`, `canRemoveCustomPoint`
-**Callbacks:** `onAddCustomPoint`, `onRemoveCustomPoint`
+**Callbacks:** `onAddCustomPoint`, `onRemoveCustomPoint`, `onResponseDataChange`, `onResponseShowCurveEffectChange`
 
 **Conditional rendering:**
 | Curve type | Controls shown |
@@ -86,7 +93,7 @@ App.svelte (root — state owner)
 | `custom` | Add/Remove point buttons |
 | Any except null | Reset button |
 
-**Children:** `PositionControls`, `PressureSmoothingControls`, `NamedSlider` (multiple)
+**Children:** `PositionControls`, `PressureSmoothingControls`, `NamedSlider` (multiple), `PressureResponsePanel`
 
 **Parent:** `PressureChart`
 
@@ -111,6 +118,44 @@ App.svelte (root — state owner)
 
 **Children:** `NamedSlider`, a `<select>` for smoothing order
 **Parent:** `PressureCurveControls`
+
+---
+
+### `PressureResponsePanel.svelte`
+**Role:** Collapsible power-user panel for loading pen hardware pressure response data. Hidden by default; revealed by a toggle button at the bottom of the controls panel.
+
+**Props (callbacks):** `onDataChange(data)`, `onShowCurveEffectChange(value)`
+
+**Features:**
+- Dropdown to select one of three bundled sample datasets (WAP.0038, WAP.0047, WAP.0050 — all Wacom KP-504E units)
+- "Upload JSON" button to load any file matching the response data schema
+- "Show effect of curve" checkbox (checked by default) — passed up via `onShowCurveEffectChange`
+- Info badge showing the loaded pen's inventory ID, model, tablet, and date
+- Clear button to unload data
+
+**Sample data imports:** `../../sample-pressure-response/WAP.0038_2025-11-10.json`, `WAP.0047_…`, `WAP.0050_…` (bundled at build time via Vite JSON imports)
+
+**Parent:** `PressureCurveControls`
+
+---
+
+### `PressureResponseChart.svelte`
+**Role:** Standalone canvas chart that visualises a pen's hardware pressure response. Rendered below the main pressure curve chart in `panel-left`, only when response data is loaded.
+
+**Props:**
+- `data` — loaded response dataset (nullable)
+- `params` — curve configuration, used when `showCurveEffect` is true
+- `showCurveEffect` — when true, applies `applyPressureCurve` to each data point's Y value
+
+**Chart axes:**
+- **X** — physical force in gram-force (gf), range 0 to max measured gf
+- **Y** — logical pressure % (0–100) when `showCurveEffect` is false; curve output % when true
+
+**Y axis label:** `LOGICAL %` (unchecked) or `OUTPUT %` (checked)
+
+**Dependencies:** [curveMath.js](#curvemathjs) (`applyPressureCurve`)
+
+**Parent:** `PressureChart`
 
 ---
 
@@ -246,6 +291,33 @@ The `params` object is the central data structure passed through the entire app:
 
 ---
 
+## Pressure Response Data Schema
+
+JSON files in `sample-pressure-response/` (and accepted via file upload) follow this schema:
+
+```js
+{
+  "brand":       string,   // Manufacturer (e.g. "WACOM")
+  "pen":         string,   // Pen model number (e.g. "KP-504E")
+  "penfamily":   string,   // Product family (optional)
+  "inventoryid": string,   // Internal tracking ID (e.g. "WAP.0038")
+  "date":        string,   // Measurement date (YYYY-MM-DD)
+  "user":        string,   // Who performed the measurement
+  "tablet":      string,   // Tablet model (e.g. "PTH-870")
+  "driver":      string,   // Driver used
+  "os":          string,   // Operating system
+  "notes":       string,   // Free-form notes
+  "records": [
+    [gramForce, logicalPressurePercent],  // e.g. [82.0, 51.4079]
+    ...
+  ]
+}
+```
+
+Each record is one empirical measurement: the physical force applied in **gram-force (gf)** and the logical pressure value the pen reported to the OS as a **percentage (0–100)**. Records are sorted by ascending gram-force.
+
+---
+
 ## Data Flow Diagram
 
 ```
@@ -256,21 +328,27 @@ The `params` object is the central data structure passed through the entire app:
                  │ bind:params      │ params (read)
                  │ livePressure     │ bind:livePressure
                  ▼                  ▼
-  ┌──────────────────────┐  ┌──────────────────────┐
-  │  PressureChart       │  │  DrawingCanvas        │
-  │  (visualization)     │  │  (pointer input)      │
-  │                      │  │                       │
-  │  ┌────────────────┐  │  │  Raw pressure         │
-  │  │ChartFormat     │  │  │    ↓ EMA smooth       │
-  │  │(display toggles│  │  │    ↓ applyPressure    │
-  │  └────────────────┘  │  │      Curve()          │
-  │  ┌────────────────┐  │  │    ↓ brush size       │
-  │  │CurveControls   │  │  │                       │
-  │  │ ├ PositionCtrl │  │  │  livePressure ──────► │
-  │  │ ├ SmoothingCtrl│  │  │  (sent to Chart)      │
-  │  │ └ NamedSliders │  │  └──────────────────────┘
-  │  └────────────────┘  │
-  └──────────────────────┘
+  ┌────────────────────────────┐  ┌──────────────────────┐
+  │  PressureChart             │  │  DrawingCanvas        │
+  │  State: pressureResponse   │  │  (pointer input)      │
+  │         showCurveEffect    │  │                       │
+  │                            │  │  Raw pressure         │
+  │  ┌────────────────┐        │  │    ↓ EMA smooth       │
+  │  │ChartFormat     │        │  │    ↓ applyPressure    │
+  │  └────────────────┘        │  │      Curve()          │
+  │  ┌────────────────┐        │  │    ↓ brush size       │
+  │  │ResponseChart   │◄─data──┤  │                       │
+  │  │  params        │◄─parm──┤  │  livePressure ──────► │
+  │  │  showEffect    │◄─bool──┤  │  (sent to Chart)      │
+  │  └────────────────┘        │  └──────────────────────┘
+  │  ┌────────────────┐        │
+  │  │CurveControls   │        │
+  │  │ ├ PositionCtrl │        │
+  │  │ ├ SmoothingCtrl│        │
+  │  │ ├ NamedSliders │        │
+  │  │ └ ResponsePanel│──cb───►│ (data + showEffect callbacks)
+  │  └────────────────┘        │
+  └────────────────────────────┘
 ```
 
 ---
@@ -282,7 +360,9 @@ The `params` object is the central data structure passed through the entire app:
 | [src/App.svelte](src/App.svelte) | Component | Root, state owner |
 | [src/lib/PressureChart.svelte](src/lib/PressureChart.svelte) | Component | Curve chart & host for controls |
 | [src/lib/PressureChartFormat.svelte](src/lib/PressureChartFormat.svelte) | Component | Chart display toggles |
+| [src/lib/PressureResponseChart.svelte](src/lib/PressureResponseChart.svelte) | Component | Hardware response data chart |
 | [src/lib/PressureCurveControls.svelte](src/lib/PressureCurveControls.svelte) | Component | Curve type + sliders |
+| [src/lib/PressureResponsePanel.svelte](src/lib/PressureResponsePanel.svelte) | Component | Load/select pen response data |
 | [src/lib/PressureSmoothingControls.svelte](src/lib/PressureSmoothingControls.svelte) | Component | Pressure EMA controls |
 | [src/lib/PositionControls.svelte](src/lib/PositionControls.svelte) | Component | Position EMA control |
 | [src/lib/NamedSlider.svelte](src/lib/NamedSlider.svelte) | Component | Reusable labeled slider |
@@ -291,3 +371,4 @@ The `params` object is the central data structure passed through the entire app:
 | [src/lib/curveMath.js](src/lib/curveMath.js) | Utility | Pressure curve math |
 | [src/main.js](src/main.js) | Entry point | Mounts App to DOM |
 | [src/app.css](src/app.css) | Styles | Global styles |
+| [sample-pressure-response/](sample-pressure-response/) | Data | Bundled pen hardware response JSON files |
