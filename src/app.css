@@ -60,8 +60,9 @@ body {
 }
 
 .panel-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
+  text-transform: uppercase;
   color: #2255cc;
   letter-spacing: 0.5px;
 }
