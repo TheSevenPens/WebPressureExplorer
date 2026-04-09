@@ -69,8 +69,12 @@
 
 <div id="panel-right">
   <div id="controls">
-    <PositionControls bind:params />
-    <PressureSmoothingControls bind:params />
+    <div class="control-section">
+      <PositionControls bind:params />
+    </div>
+
+    <div class="control-section">
+      <PressureSmoothingControls bind:params />
 
     <div class="param">
       <div class="param-header">
@@ -251,6 +255,7 @@
     {#if params.curveType !== 'null-effect'}
       <button id="btn-reset" on:click={resetToDefaults}>Reset curve</button>
     {/if}
+    </div>
 
     <PressureResponsePanel
       onDataChange={onResponseDataChange}

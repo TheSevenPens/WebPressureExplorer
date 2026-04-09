@@ -86,12 +86,19 @@ body {
   gap: 4px;
 }
 
+.control-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 2px solid #d0d0e0;
+}
+
 .param-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #e8e8f0;
 }
 
 .param-group-title {
