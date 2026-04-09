@@ -3,7 +3,6 @@
   import { applyPressureCurve } from './curveMath';
   import DrawingCanvasHeader from './DrawingCanvasHeader.svelte';
 
-  const MAX_BRUSH_SIZE = 40;
   const CANVAS_BG = '#f5f5f0';
   const DIVIDER_HEIGHT = 1;
 
@@ -41,6 +40,7 @@
   let smoothedPressure = null;
   let smoothedPos = null;
   let drawZeroPressure = false;
+  let brushSize = 40;
 
   function getSmoothedPressure(rawPressure) {
     const smoothing = Math.min(0.99, Math.max(0, Number(params.emaSmoothing ?? 0)));
@@ -214,11 +214,11 @@
     const currentPos = getSmoothedPos(pointerToCanvasPos(event, sourceCanvas));
 
     if (drawZeroPressure || processedPressure.outputPressure > 0) {
-      const processedSize = Math.max(1, processedPressure.outputPressure * MAX_BRUSH_SIZE);
+      const processedSize = Math.max(1, processedPressure.outputPressure * brushSize);
       drawSegment(processedCtx, lastPos, currentPos, processedSize);
     }
 
-    const rawSize = Math.max(1, rawPressure * MAX_BRUSH_SIZE);
+    const rawSize = Math.max(1, rawPressure * brushSize);
     drawSegment(rawCtx, lastPos, currentPos, rawSize);
 
     lastPos = currentPos;
@@ -264,7 +264,7 @@
 </script>
 
 <div id="draw-panel" bind:this={drawPanelEl}>
-  <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvases} />
+  <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvases} {brushSize} onBrushSizeChange={(v) => brushSize = v} />
 
   <div class="split-canvas-wrap">
     <div class="split-canvas-label">
