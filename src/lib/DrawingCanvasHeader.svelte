@@ -110,13 +110,13 @@
   }
 
   .toolbar-select {
-    font-size: 11px;
+    font-size: 12px;
     padding: 1px 3px;
   }
 
   .brush-size-input {
     width: 42px;
-    font-size: 11px;
+    font-size: 12px;
     padding: 1px 3px;
     text-align: right;
   }

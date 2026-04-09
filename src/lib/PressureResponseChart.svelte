@@ -208,13 +208,13 @@
   }
 
   .response-chart-id {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: bold;
     color: #cc6600;
   }
 
   .response-chart-meta {
-    font-size: 10px;
+    font-size: 12px;
     color: #999;
   }
 

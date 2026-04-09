@@ -132,7 +132,7 @@
     background: none;
     border: none;
     padding: 0;
-    font-size: 11px;
+    font-size: 12px;
     color: #666;
     cursor: pointer;
     font-family: inherit;
@@ -153,7 +153,7 @@
 
   .response-controls select {
     width: 100%;
-    font-size: 11px;
+    font-size: 12px;
     padding: 2px 4px;
     font-family: inherit;
   }
@@ -165,7 +165,7 @@
   }
 
   .small-action-btn {
-    font-size: 11px;
+    font-size: 12px;
     padding: 2px 7px;
     cursor: pointer;
   }
@@ -174,7 +174,7 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 11px;
+    font-size: 12px;
     color: #444;
     cursor: pointer;
     user-select: none;
@@ -184,7 +184,7 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
-    font-size: 10px;
+    font-size: 12px;
     color: #888;
     background: #f5f5f8;
     border-left: 2px solid #cc6600;

@@ -172,7 +172,7 @@
 
   .param-value-edit {
     width: 52px;
-    font-size: 11px;
+    font-size: 12px;
     font-family: inherit;
     text-align: right;
     border: 1px solid #aaaacc;

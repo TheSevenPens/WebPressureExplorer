@@ -17,7 +17,7 @@ input, button, select, textarea {
 
 body {
   font-family: 'Google Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   overflow: hidden;
   height: 100vh;
   background: #e8e8ec;
@@ -45,7 +45,7 @@ body {
   background: #ffdd57;
   border-bottom: 1px solid #d4a800;
   color: #3a2e00;
-  font-size: 15px;
+  font-size: 12px;
   flex-shrink: 0;
 }
 
@@ -374,7 +374,7 @@ input[type="checkbox"]:disabled {
 
 .preset-delete-btn {
   padding: 2px 6px;
-  font-size: 11px;
+  font-size: 12px;
   background: none;
   border: 1px solid #d0d0dd;
   border-radius: 4px;
@@ -388,7 +388,7 @@ input[type="checkbox"]:disabled {
 }
 
 .preset-empty {
-  font-size: 11px;
+  font-size: 12px;
   color: #999;
   padding: 2px 0;
 }
@@ -475,6 +475,6 @@ input[type="checkbox"]:disabled {
 
 .arrow {
   color: #999;
-  font-size: 11px;
+  font-size: 12px;
 }
 
