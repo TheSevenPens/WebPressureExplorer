@@ -4,6 +4,12 @@
   import DrawingCanvasHeader from './DrawingCanvasHeader.svelte';
 
   const CANVAS_BG = '#f5f5f0';
+  const STROKE_PALETTE = [
+    '#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4',
+    '#42d4f4', '#f032e6', '#bfef45', '#fabed4', '#469990',
+    '#dcbeff', '#9a6324', '#800000', '#aaffc3', '#808000',
+    '#000075',
+  ];
   const DIVIDER_HEIGHT = 1;
 
   const initialInfo = {
@@ -41,6 +47,22 @@
   let smoothedPos = null;
   let drawZeroPressure = false;
   let brushSize = 40;
+  let colorMode = 'black';
+  let strokeColor = '#1a1a2e';
+  let lastColorIndex = -1;
+
+  function pickStrokeColor() {
+    if (colorMode === 'black') {
+      strokeColor = '#1a1a2e';
+      return;
+    }
+    let index;
+    do {
+      index = Math.floor(Math.random() * STROKE_PALETTE.length);
+    } while (index === lastColorIndex);
+    lastColorIndex = index;
+    strokeColor = STROKE_PALETTE[index];
+  }
 
   function getSmoothedPressure(rawPressure) {
     const smoothing = Math.min(0.99, Math.max(0, Number(params.emaSmoothing ?? 0)));
@@ -158,7 +180,7 @@
 
   function drawSegment(ctx, from, to, size) {
     ctx.lineWidth = size;
-    ctx.strokeStyle = '#1a1a2e';
+    ctx.strokeStyle = strokeColor;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
@@ -189,6 +211,7 @@
   }
 
   function handlePointerDown(event, sourceCanvas) {
+    pickStrokeColor();
     isDrawing = true;
     lastPos = getSmoothedPos(pointerToCanvasPos(event, sourceCanvas));
     const rawPressure = Number(event.pressure ?? 0);
@@ -282,7 +305,7 @@
 </script>
 
 <div id="draw-panel" bind:this={drawPanelEl}>
-  <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvases} {brushSize} onBrushSizeChange={(v) => brushSize = v} />
+  <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvases} {brushSize} onBrushSizeChange={(v) => brushSize = v} {colorMode} onColorModeChange={(v) => colorMode = v} />
 
   <div class="split-canvas-wrap">
     <div class="split-canvas-label">
