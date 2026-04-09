@@ -30,7 +30,7 @@
   </div>
 
   <NamedSlider
-    name="Pressure EMA"
+    name="Pressure Smoothing"
     value={params.emaSmoothing ?? 0}
     min={0}
     max={EMA_MAX}
