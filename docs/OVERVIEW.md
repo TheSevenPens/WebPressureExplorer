@@ -49,7 +49,7 @@ src/
   lib/
     PressureChart.svelte        Curve chart + interaction + export
     PressureChartFormat.svelte  Display toggle checkboxes
-    PressureCurveControls.svelte  Curve type selector + parameter sliders
+    PressureCurveControls.svelte  DetailsPanel: curve type selector + parameter sliders
     PressureResponseChart.svelte  Pen hardware response data chart
     PressureResponsePanel.svelte  Load/select response data
     PressureSmoothingControls.svelte  Pressure EMA + order controls

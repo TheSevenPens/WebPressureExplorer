@@ -144,8 +144,8 @@
   }
 </script>
 
-<div id="panel-right">
-  <div id="controls">
+<div id="details-panel">
+  <div id="details-controls">
     <div class="control-section">
       <PositionControls bind:params />
     </div>

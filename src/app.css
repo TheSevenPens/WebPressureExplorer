@@ -48,12 +48,12 @@ body {
   min-width: 180px;
 }
 
-#panel-right {
+#details-panel {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  width: 190px;
+  width: 247px;
   border-left: 1px solid #e8e8f0;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -73,7 +73,7 @@ body {
   border: 1px solid #e0e0ea;
 }
 
-#controls {
+#details-controls {
   display: flex;
   flex-direction: column;
   gap: 10px;
