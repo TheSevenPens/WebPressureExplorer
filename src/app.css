@@ -308,6 +308,84 @@ input[type="checkbox"]:disabled {
   cursor: not-allowed;
 }
 
+.preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.preset-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.preset-load-btn {
+  flex: 1;
+  text-align: left;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #f0f0f8;
+  border: 1px solid #d0d0dd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.preset-load-btn:hover {
+  background: #e4e4f0;
+}
+
+.preset-delete-btn {
+  padding: 2px 6px;
+  font-size: 11px;
+  background: none;
+  border: 1px solid #d0d0dd;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #999;
+}
+
+.preset-delete-btn:hover {
+  background: #f0e0e0;
+  color: #cc3333;
+}
+
+.preset-empty {
+  font-size: 11px;
+  color: #999;
+  padding: 2px 0;
+}
+
+.preset-save-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.preset-name-input {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  border: 1px solid #d0d0dd;
+  border-radius: 4px;
+}
+
+.preset-confirm {
+  font-size: 12px;
+  padding: 6px 8px;
+  background: #fff8e0;
+  border: 1px solid #e0d080;
+  border-radius: 4px;
+}
+
+.preset-confirm-buttons {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 #draw-panel {
   width: 100%;
   display: flex;

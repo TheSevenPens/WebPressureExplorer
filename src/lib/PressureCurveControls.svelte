@@ -18,6 +18,62 @@
   export let onResponseDataChange = () => {};
   export let onResponseShowCurveEffectChange = () => {};
 
+  const PRESETS_STORAGE_KEY = 'wpe-user-presets';
+
+  let userPresets = loadPresets();
+  let showSaveInput = false;
+  let savePresetName = '';
+  let pendingLoadPreset = null;
+
+  function loadPresets() {
+    try {
+      const stored = localStorage.getItem(PRESETS_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function persistPresets() {
+    localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(userPresets));
+  }
+
+  function savePreset() {
+    const name = savePresetName.trim();
+    if (!name) return;
+    const existing = userPresets.findIndex((p) => p.name === name);
+    const entry = { name, params: JSON.parse(JSON.stringify(params)) };
+    if (existing >= 0) {
+      userPresets[existing] = entry;
+    } else {
+      userPresets = [...userPresets, entry];
+    }
+    persistPresets();
+    showSaveInput = false;
+    savePresetName = '';
+  }
+
+  function confirmLoadPreset(name) {
+    pendingLoadPreset = name;
+  }
+
+  function applyLoadPreset() {
+    const preset = userPresets.find((p) => p.name === pendingLoadPreset);
+    if (preset) {
+      params = { ...preset.params };
+    }
+    pendingLoadPreset = null;
+  }
+
+  function cancelLoadPreset() {
+    pendingLoadPreset = null;
+  }
+
+  function deletePreset(name) {
+    userPresets = userPresets.filter((p) => p.name !== name);
+    persistPresets();
+  }
+
   function patchParams(nextValues) {
     params = { ...params, ...nextValues };
   }
@@ -288,6 +344,53 @@
     {#if params.curveType !== CURVE_TYPE.PASSTHROUGH}
       <button id="btn-reset" on:click={resetToDefaults}>Reset curve</button>
     {/if}
+    </div>
+
+    <div class="control-section">
+      <div class="param-group">
+        <div class="param-group-title">Presets</div>
+      </div>
+
+      {#if pendingLoadPreset}
+        <div class="preset-confirm">
+          Load "{pendingLoadPreset}"? This will replace all current settings.
+          <div class="preset-confirm-buttons">
+            <button type="button" class="small-action-btn" on:click={applyLoadPreset}>Yes</button>
+            <button type="button" class="small-action-btn" on:click={cancelLoadPreset}>Cancel</button>
+          </div>
+        </div>
+      {/if}
+
+      {#if userPresets.length > 0}
+        <div class="preset-list">
+          {#each userPresets as preset}
+            <div class="preset-item">
+              <button type="button" class="preset-load-btn" on:click={() => confirmLoadPreset(preset.name)}>
+                {preset.name}
+              </button>
+              <button type="button" class="preset-delete-btn" on:click={() => deletePreset(preset.name)}>✕</button>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <div class="preset-empty">No saved presets</div>
+      {/if}
+
+      {#if showSaveInput}
+        <div class="preset-save-row">
+          <input
+            type="text"
+            class="preset-name-input"
+            placeholder="Preset name"
+            bind:value={savePresetName}
+            on:keydown={(e) => { if (e.key === 'Enter') savePreset(); if (e.key === 'Escape') { showSaveInput = false; savePresetName = ''; } }}
+          />
+          <button type="button" class="small-action-btn" on:click={savePreset}>Save</button>
+          <button type="button" class="small-action-btn" on:click={() => { showSaveInput = false; savePresetName = ''; }}>Cancel</button>
+        </div>
+      {:else}
+        <button type="button" class="small-action-btn" on:click={() => showSaveInput = true}>Save current as preset</button>
+      {/if}
     </div>
 
     <div class="control-section">
