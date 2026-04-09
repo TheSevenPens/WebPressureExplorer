@@ -75,6 +75,12 @@
 
     <div class="control-section">
       <PressureSmoothingControls bind:params />
+    </div>
+
+    <div class="control-section">
+      <div class="param-group">
+        <div class="param-group-title">Pressure Curve</div>
+      </div>
 
     <div class="param">
       <div class="param-header">
@@ -257,9 +263,14 @@
     {/if}
     </div>
 
-    <PressureResponsePanel
-      onDataChange={onResponseDataChange}
-      onShowCurveEffectChange={onResponseShowCurveEffectChange}
-    />
+    <div class="control-section">
+      <div class="param-group">
+        <div class="param-group-title">Pressure Response</div>
+      </div>
+      <PressureResponsePanel
+        onDataChange={onResponseDataChange}
+        onShowCurveEffectChange={onResponseShowCurveEffectChange}
+      />
+    </div>
   </div>
 </div>
