@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import PressureChart from './lib/PressureChart.svelte';
   import DrawingCanvas from './lib/DrawingCanvas.svelte';
+  import { CURVE_TYPE } from './lib/curveTypes';
 
   const DEFAULT_PARAMS = {
     emaSmoothing: 0,
@@ -12,7 +13,7 @@
     inputMaximum: 1,
     minimum: 0,
     maximum: 1,
-    curveType: 'basic',
+    curveType: CURVE_TYPE.BASIC,
     minApproach: 'clamp',
     transitionWidth: 0,
     flatLevel: 0.5,

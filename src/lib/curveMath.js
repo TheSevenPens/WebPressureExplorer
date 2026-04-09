@@ -1,3 +1,5 @@
+import { CURVE_TYPE } from './curveTypes';
+
 export function cubicHermite(t, y0, m0, y1, m1) {
   const t2 = t * t;
   const t3 = t2 * t;
@@ -9,7 +11,7 @@ export function rawCurveOutput(xNorm, params) {
   const { softness, minimum, maximum, curveType } = params;
   let curved;
 
-  if (curveType === 'sigmoid') {
+  if (curveType === CURVE_TYPE.SIGMOID) {
     const k = softness * 14;
     if (Math.abs(k) < 0.01) {
       curved = xNorm;
@@ -203,9 +205,9 @@ export function applyPressureCurve(x, params) {
     bezierPoints,
   } = params;
 
-  if (curveType === 'null-effect') return x;
-  if (curveType === 'flat') return flatLevel;
-  if (curveType === 'bezier') {
+  if (curveType === CURVE_TYPE.PASSTHROUGH) return x;
+  if (curveType === CURVE_TYPE.FLAT) return flatLevel;
+  if (curveType === CURVE_TYPE.BEZIER) {
     const clampedX = Math.min(1, Math.max(0, x));
     return evaluateCustomCurve(clampedX, bezierPoints);
   }

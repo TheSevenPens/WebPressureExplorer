@@ -1,5 +1,6 @@
 <script>
   import NamedSlider from './NamedSlider.svelte';
+  import { CURVE_TYPE } from './curveTypes';
   import PositionControls from './PositionControls.svelte';
   import PressureSmoothingControls from './PressureSmoothingControls.svelte';
   import PressureResponsePanel from './PressureResponsePanel.svelte';
@@ -37,16 +38,25 @@
   }
 
   function handleCurveTypeChange(event) {
-    patchParams({ curveType: event.currentTarget.value });
+    const newType = event.currentTarget.value;
+    const updates = { curveType: newType };
+    if (newType === CURVE_TYPE.BASIC) {
+      updates.inputMinimum = 0;
+      updates.inputMaximum = 1;
+      updates.minimum = 0;
+      updates.maximum = 1;
+      updates.minApproach = 'clamp';
+    }
+    patchParams(updates);
   }
 
   function resetToDefaults() {
-    if (params.curveType === 'flat') {
+    if (params.curveType === CURVE_TYPE.FLAT) {
       patchParams({ flatLevel: defaultParams.flatLevel });
       return;
     }
 
-    if (params.curveType === 'bezier') {
+    if (params.curveType === CURVE_TYPE.BEZIER) {
       const defaultBezierPoints = Array.isArray(defaultParams.bezierPoints)
         ? defaultParams.bezierPoints.map((point) => ({ ...point }))
         : [{ x: 0, y: 0 }, { x: 1, y: 1 }];
@@ -87,11 +97,12 @@
         <span class="param-name">CurveType</span>
       </div>
       <select value={params.curveType} on:change={handleCurveTypeChange}>
-        <option value="null-effect">Null-effect</option>
-        <option value="flat">Flat</option>
-        <option value="basic">Basic</option>
-        <option value="sigmoid">Sigmoid</option>
-        <option value="bezier">Bezier</option>
+        <option value={CURVE_TYPE.PASSTHROUGH}>Passthrough</option>
+        <option value={CURVE_TYPE.FLAT}>Flat</option>
+        <option value={CURVE_TYPE.BASIC}>Basic</option>
+        <option value={CURVE_TYPE.EXTENDED}>Extended</option>
+        <option value={CURVE_TYPE.SIGMOID}>Sigmoid</option>
+        <option value={CURVE_TYPE.BEZIER}>Bezier</option>
       </select>
     </div>
 
@@ -166,7 +177,7 @@
       />
     {/if}
 
-    {#if curveActive}
+    {#if params.curveType === CURVE_TYPE.EXTENDED || params.curveType === CURVE_TYPE.SIGMOID}
       <NamedSlider
         name="InputMinimum"
         value={params.inputMinimum}
@@ -181,9 +192,7 @@
         defaultValue={defaultParams.inputMinimum}
         onValueChange={(value) => handleSliderValue('inputMinimum', value)}
       />
-    {/if}
 
-    {#if curveActive}
       <NamedSlider
         name="InputMaximum"
         value={params.inputMaximum}
@@ -198,9 +207,7 @@
         defaultValue={defaultParams.inputMaximum}
         onValueChange={(value) => handleSliderValue('inputMaximum', value)}
       />
-    {/if}
 
-    {#if curveActive}
       <NamedSlider
         name="OutputMinimum"
         value={params.minimum}
@@ -239,9 +246,7 @@
           Cut
         </label>
       </div>
-    {/if}
 
-    {#if curveActive}
       <NamedSlider
         name="OutputMaximum"
         value={params.maximum}
@@ -258,7 +263,7 @@
       />
     {/if}
 
-    {#if params.curveType !== 'null-effect'}
+    {#if params.curveType !== CURVE_TYPE.PASSTHROUGH}
       <button id="btn-reset" on:click={resetToDefaults}>Reset curve</button>
     {/if}
     </div>
