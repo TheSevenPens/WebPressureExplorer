@@ -102,10 +102,11 @@ body {
 }
 
 .param-group-title {
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: #7a7a8a;
+  color: #333;
 }
 
 .param-header {
