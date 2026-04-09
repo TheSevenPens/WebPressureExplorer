@@ -1,11 +1,8 @@
 <script>
   import NamedSlider from './NamedSlider.svelte';
+  import { EMA_MAX, EMA_CURVE_EXPONENT } from './emaConstants';
 
   export let params;
-
-  const EMA_MAX = 0.99;
-  const EMA_MID_TARGET = 0.8;
-  const EMA_CURVE_EXPONENT = Math.log(EMA_MID_TARGET / EMA_MAX) / Math.log(0.5);
 
   function patchParams(nextValues) {
     params = { ...params, ...nextValues };

@@ -1,18 +1,11 @@
 <script>
   import { onMount } from 'svelte';
-  import { applyPressureCurve } from './curveMath';
+  import { applyPressureCurve, normalizeBezierPoints } from './curveMath';
+  import { PAD_LEFT, PAD_TOP, PAD_RIGHT, PAD_BOTTOM } from './canvasConstants';
+  import { drawBackground, drawGrid as drawCanvasGrid, drawLabels as drawCanvasLabels, drawIndicator } from './canvasUtils';
   import PressureChartFormat from './PressureChartFormat.svelte';
   import PressureCurveControls from './PressureCurveControls.svelte';
   import PressureResponseChart from './PressureResponseChart.svelte';
-
-  const PAD_LEFT = 42;
-  const PAD_BOTTOM = 32;
-  const PAD_TOP = 20;
-  const PAD_RIGHT = 20;
-  const X_LABEL_SPACING = 8;
-  const Y_LABEL_SPACING = 8;
-  const X_AXIS_LABEL_SPACING = 2;
-  const Y_AXIS_LABEL_SPACING = 7;
 
   const CURVE_COLOR = '#000000';
   const MIN_CONTROL_NODE_COLOR = 'rgb(255, 0, 136)';
@@ -70,7 +63,7 @@
   $: curveActive = params.curveType === 'basic' || params.curveType === 'sigmoid';
   $: flatActive = params.curveType === 'flat';
   $: bezierActive = params.curveType === 'bezier';
-  $: bezierPoints = sanitizeBezierPoints(params.bezierPoints);
+  $: bezierPoints = normalizeBezierPoints(params.bezierPoints);
   $: canAddBezierPoint = bezierActive && bezierPoints.length < 16;
   $: canRemoveBezierPoint = bezierActive && bezierPoints.length > 2;
 
@@ -91,96 +84,12 @@
     params = { ...params, ...nextValues };
   }
 
-  function sanitizeBezierPoints(points) {
-    const source = Array.isArray(points) && points.length > 0
-      ? points
-      : [{ x: 0, y: 0 }, { x: 1, y: 1 }];
-
-    const normalized = source
-      .map((point) => ({
-        x: Number(point?.x ?? 0),
-        y: Number(point?.y ?? 0),
-        inX: Number(point?.inX ?? point?.x ?? 0),
-        inY: Number(point?.inY ?? point?.y ?? 0),
-        outX: Number(point?.outX ?? point?.x ?? 0),
-        outY: Number(point?.outY ?? point?.y ?? 0),
-        handleMode: point?.handleMode === 'mirrored' ? 'mirrored' : 'broken',
-      }))
-      .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
-      .map((point) => ({
-        x: Math.min(1, Math.max(0, point.x)),
-        y: Math.min(1, Math.max(0, point.y)),
-        inX: Number.isFinite(point.inX) ? Math.min(1, Math.max(0, point.inX)) : Math.min(1, Math.max(0, point.x)),
-        inY: Number.isFinite(point.inY) ? Math.min(1, Math.max(0, point.inY)) : Math.min(1, Math.max(0, point.y)),
-        outX: Number.isFinite(point.outX) ? Math.min(1, Math.max(0, point.outX)) : Math.min(1, Math.max(0, point.x)),
-        outY: Number.isFinite(point.outY) ? Math.min(1, Math.max(0, point.outY)) : Math.min(1, Math.max(0, point.y)),
-        handleMode: point.handleMode,
-      }))
-      .sort((a, b) => a.x - b.x);
-
-    if (normalized.length === 0) {
-      return [
-        { x: 0, y: 0, inX: 0, inY: 0, outX: 0.33, outY: 0, handleMode: 'broken' },
-        { x: 1, y: 1, inX: 0.67, inY: 1, outX: 1, outY: 1, handleMode: 'broken' },
-      ];
-    }
-
-    if (normalized[0].x > 0) {
-      normalized.unshift({
-        x: 0,
-        y: normalized[0].y,
-        inX: 0,
-        inY: normalized[0].y,
-        outX: Math.min(1, normalized[0].x / 2),
-        outY: normalized[0].y,
-        handleMode: 'broken',
-      });
-    } else {
-      normalized[0] = { ...normalized[0], x: 0 };
-    }
-
-    const lastIndex = normalized.length - 1;
-    if (normalized[lastIndex].x < 1) {
-      normalized.push({
-        x: 1,
-        y: normalized[lastIndex].y,
-        inX: Math.max(0, (normalized[lastIndex].x + 1) / 2),
-        inY: normalized[lastIndex].y,
-        outX: 1,
-        outY: normalized[lastIndex].y,
-        handleMode: 'broken',
-      });
-    } else {
-      normalized[lastIndex] = { ...normalized[lastIndex], x: 1 };
-    }
-
-    for (let i = 0; i < normalized.length; i += 1) {
-      const point = normalized[i];
-      const prevX = i > 0 ? normalized[i - 1].x : point.x;
-      const nextX = i < normalized.length - 1 ? normalized[i + 1].x : point.x;
-      point.inX = Math.max(prevX, Math.min(point.x, point.inX));
-      point.outX = Math.max(point.x, Math.min(nextX, point.outX));
-      point.inY = Math.min(1, Math.max(0, point.inY));
-      point.outY = Math.min(1, Math.max(0, point.outY));
-      point.handleMode = point.handleMode === 'mirrored' ? 'mirrored' : 'broken';
-    }
-
-    normalized[0].inX = normalized[0].x;
-    normalized[0].inY = normalized[0].y;
-    normalized[0].handleMode = 'broken';
-    normalized[lastIndex].outX = normalized[lastIndex].x;
-    normalized[lastIndex].outY = normalized[lastIndex].y;
-    normalized[lastIndex].handleMode = 'broken';
-
-    return normalized;
-  }
-
   function isRemovableBezierPoint(index) {
     return index !== null && index > 0 && index < bezierPoints.length - 1;
   }
 
   function updateBezierPoints(nextPoints) {
-    patchParams({ bezierPoints: sanitizeBezierPoints(nextPoints) });
+    patchParams({ bezierPoints: normalizeBezierPoints(nextPoints) });
   }
 
   function bezierPointCenter(index) {
@@ -495,64 +404,9 @@
     const plotW = width - PAD_LEFT - PAD_RIGHT;
     const plotH = height - PAD_TOP - PAD_BOTTOM;
 
-    curveCtx.fillStyle = '#ffffff';
-    curveCtx.fillRect(0, 0, width, height);
-    curveCtx.fillStyle = '#f7f7fb';
-    curveCtx.fillRect(PAD_LEFT, PAD_TOP, plotW, plotH);
-
-    if (showGrid) {
-      curveCtx.strokeStyle = '#ebebf4';
-      curveCtx.lineWidth = 1;
-      for (let i = 0; i <= 4; i += 1) {
-        const gx = PAD_LEFT + (i / 4) * plotW;
-        const gy = PAD_TOP + (i / 4) * plotH;
-
-        curveCtx.beginPath();
-        curveCtx.moveTo(gx, PAD_TOP);
-        curveCtx.lineTo(gx, PAD_TOP + plotH);
-        curveCtx.stroke();
-
-        curveCtx.beginPath();
-        curveCtx.moveTo(PAD_LEFT, gy);
-        curveCtx.lineTo(PAD_LEFT + plotW, gy);
-        curveCtx.stroke();
-      }
-    }
-
-    if (showLabels) {
-      curveCtx.fillStyle = '#000000';
-      curveCtx.font = '9px Consolas, monospace';
-
-      curveCtx.textAlign = 'center';
-      curveCtx.textBaseline = 'top';
-      for (let i = 0; i <= 4; i += 1) {
-        const gx = PAD_LEFT + (i / 4) * plotW;
-        const label = (i * 0.25).toFixed(2).replace(/\.?0+$/, '');
-        curveCtx.fillText(label, gx, PAD_TOP + plotH + X_LABEL_SPACING);
-      }
-
-      curveCtx.textAlign = 'right';
-      curveCtx.textBaseline = 'middle';
-      for (let i = 0; i <= 4; i += 1) {
-        const gy = PAD_TOP + plotH - (i / 4) * plotH;
-        const label = (i * 0.25).toFixed(2).replace(/\.?0+$/, '');
-        curveCtx.fillText(label, PAD_LEFT - Y_LABEL_SPACING, gy);
-      }
-
-      curveCtx.fillStyle = '#000000';
-      curveCtx.font = '9px Segoe UI, sans-serif';
-      curveCtx.textAlign = 'center';
-      curveCtx.textBaseline = 'bottom';
-      curveCtx.fillText('INPUT', PAD_LEFT + plotW / 2, height - X_AXIS_LABEL_SPACING);
-
-      curveCtx.save();
-      curveCtx.translate(Y_AXIS_LABEL_SPACING, PAD_TOP + plotH / 2);
-      curveCtx.rotate(-Math.PI / 2);
-      curveCtx.textAlign = 'center';
-      curveCtx.textBaseline = 'top';
-      curveCtx.fillText('OUTPUT', 0, 0);
-      curveCtx.restore();
-    }
+    drawBackground(curveCtx, width, height, plotW, plotH);
+    if (showGrid) drawCanvasGrid(curveCtx, plotW, plotH);
+    if (showLabels) drawCanvasLabels(curveCtx, width, height, plotW, plotH);
 
     curveCtx.lineWidth = 2;
     curveCtx.lineJoin = 'round';
@@ -743,46 +597,12 @@
 
     if (showEffectiveIndicator && livePressure !== null) {
       const mapped = applyPressureCurve(livePressure, params);
-      const dotX = PAD_LEFT + livePressure * plotW;
-      const dotY = PAD_TOP + plotH - mapped * plotH;
-
-      curveCtx.strokeStyle = 'rgba(20, 160, 80, 0.2)';
-      curveCtx.lineWidth = 1;
-      curveCtx.setLineDash([3, 4]);
-      curveCtx.beginPath();
-      curveCtx.moveTo(dotX, PAD_TOP + plotH);
-      curveCtx.lineTo(dotX, dotY);
-      curveCtx.moveTo(PAD_LEFT, dotY);
-      curveCtx.lineTo(dotX, dotY);
-      curveCtx.stroke();
-      curveCtx.setLineDash([]);
-
-      curveCtx.fillStyle = '#14a050';
-      curveCtx.beginPath();
-      curveCtx.arc(dotX, dotY, 4, 0, Math.PI * 2);
-      curveCtx.fill();
+      drawIndicator(curveCtx, plotW, plotH, livePressure, mapped, '#14a050', 'rgba(20, 160, 80, 0.2)');
     }
 
     if (showRawIndicator && liveRawPressure !== null) {
       const mapped = applyPressureCurve(liveRawPressure, params);
-      const dotX = PAD_LEFT + liveRawPressure * plotW;
-      const dotY = PAD_TOP + plotH - mapped * plotH;
-
-      curveCtx.strokeStyle = 'rgba(130, 60, 200, 0.2)';
-      curveCtx.lineWidth = 1;
-      curveCtx.setLineDash([3, 4]);
-      curveCtx.beginPath();
-      curveCtx.moveTo(dotX, PAD_TOP + plotH);
-      curveCtx.lineTo(dotX, dotY);
-      curveCtx.moveTo(PAD_LEFT, dotY);
-      curveCtx.lineTo(dotX, dotY);
-      curveCtx.stroke();
-      curveCtx.setLineDash([]);
-
-      curveCtx.fillStyle = '#8833cc';
-      curveCtx.beginPath();
-      curveCtx.arc(dotX, dotY, 4, 0, Math.PI * 2);
-      curveCtx.fill();
+      drawIndicator(curveCtx, plotW, plotH, liveRawPressure, mapped, '#8833cc', 'rgba(130, 60, 200, 0.2)');
     }
   }
 

@@ -35,12 +35,12 @@ export function rawCurveSlope(xNorm, params) {
   return (rawCurveOutput(x1, params) - rawCurveOutput(x0, params)) / (x1 - x0);
 }
 
-function normalizeCustomPoints(points) {
+export function normalizeBezierPoints(points) {
   const source = Array.isArray(points) && points.length > 0
     ? points
     : [{ x: 0, y: 0 }, { x: 1, y: 1 }];
 
-  const base = source
+  const normalized = source
     .map((point) => ({
       x: Number(point?.x ?? 0),
       y: Number(point?.y ?? 0),
@@ -48,6 +48,7 @@ function normalizeCustomPoints(points) {
       inY: Number(point?.inY ?? point?.y ?? 0),
       outX: Number(point?.outX ?? point?.x ?? 0),
       outY: Number(point?.outY ?? point?.y ?? 0),
+      handleMode: point?.handleMode === 'mirrored' ? 'mirrored' : 'broken',
     }))
     .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
     .map((point) => ({
@@ -57,15 +58,14 @@ function normalizeCustomPoints(points) {
       inY: Number.isFinite(point.inY) ? Math.min(1, Math.max(0, point.inY)) : Math.min(1, Math.max(0, point.y)),
       outX: Number.isFinite(point.outX) ? Math.min(1, Math.max(0, point.outX)) : Math.min(1, Math.max(0, point.x)),
       outY: Number.isFinite(point.outY) ? Math.min(1, Math.max(0, point.outY)) : Math.min(1, Math.max(0, point.y)),
+      handleMode: point.handleMode,
     }))
     .sort((a, b) => a.x - b.x);
 
-  const normalized = base;
-
   if (normalized.length === 0) {
     return [
-      { x: 0, y: 0, inX: 0, inY: 0, outX: 0.33, outY: 0 },
-      { x: 1, y: 1, inX: 0.67, inY: 1, outX: 1, outY: 1 },
+      { x: 0, y: 0, inX: 0, inY: 0, outX: 0.33, outY: 0, handleMode: 'broken' },
+      { x: 1, y: 1, inX: 0.67, inY: 1, outX: 1, outY: 1, handleMode: 'broken' },
     ];
   }
 
@@ -77,6 +77,7 @@ function normalizeCustomPoints(points) {
       inY: normalized[0].y,
       outX: Math.min(1, normalized[0].x / 2),
       outY: normalized[0].y,
+      handleMode: 'broken',
     });
   } else {
     normalized[0] = { ...normalized[0], x: 0 };
@@ -91,6 +92,7 @@ function normalizeCustomPoints(points) {
       inY: normalized[lastIndex].y,
       outX: 1,
       outY: normalized[lastIndex].y,
+      handleMode: 'broken',
     });
   } else {
     normalized[lastIndex] = { ...normalized[lastIndex], x: 1 };
@@ -104,18 +106,21 @@ function normalizeCustomPoints(points) {
     point.outX = Math.max(point.x, Math.min(nextX, point.outX));
     point.inY = Math.min(1, Math.max(0, point.inY));
     point.outY = Math.min(1, Math.max(0, point.outY));
+    point.handleMode = point.handleMode === 'mirrored' ? 'mirrored' : 'broken';
   }
 
   normalized[0].inX = normalized[0].x;
   normalized[0].inY = normalized[0].y;
-  normalized[normalized.length - 1].outX = normalized[normalized.length - 1].x;
-  normalized[normalized.length - 1].outY = normalized[normalized.length - 1].y;
+  normalized[0].handleMode = 'broken';
+  normalized[lastIndex].outX = normalized[lastIndex].x;
+  normalized[lastIndex].outY = normalized[lastIndex].y;
+  normalized[lastIndex].handleMode = 'broken';
 
   return normalized;
 }
 
 function buildCustomSegments(points) {
-  const normalized = normalizeCustomPoints(points);
+  const normalized = normalizeBezierPoints(points);
   const segments = [];
   for (let i = 0; i < normalized.length - 1; i += 1) {
     segments.push({
