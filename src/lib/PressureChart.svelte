@@ -664,8 +664,14 @@
 
       curveCtx.strokeStyle = CURVE_COLOR;
       curveCtx.beginPath();
-      curveCtx.moveTo(PAD_LEFT, PAD_TOP + plotH - outMin * plotH);
-      curveCtx.lineTo(PAD_LEFT + inMin * plotW, PAD_TOP + plotH - outMin * plotH);
+      if (params.minApproach === 'cut') {
+        curveCtx.moveTo(PAD_LEFT, PAD_TOP + plotH);
+        curveCtx.lineTo(PAD_LEFT + inMin * plotW, PAD_TOP + plotH);
+        curveCtx.lineTo(PAD_LEFT + inMin * plotW, PAD_TOP + plotH - outMin * plotH);
+      } else {
+        curveCtx.moveTo(PAD_LEFT, PAD_TOP + plotH - outMin * plotH);
+        curveCtx.lineTo(PAD_LEFT + inMin * plotW, PAD_TOP + plotH - outMin * plotH);
+      }
       curveCtx.stroke();
 
       curveCtx.strokeStyle = CURVE_COLOR;

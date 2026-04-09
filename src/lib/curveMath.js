@@ -205,6 +205,9 @@ export function applyPressureCurve(x, params) {
     return evaluateCustomCurve(clampedX, bezierPoints);
   }
 
+  const minApproach = params.minApproach || 'default';
+  if (minApproach === 'cut' && x < inputMinimum) return 0;
+
   const inputRange = inputMaximum - inputMinimum;
   const xNorm = inputRange > 0 ? Math.min(1, Math.max(0, (x - inputMinimum) / inputRange)) : 0;
   const baseOutput = rawCurveOutput(xNorm, params);

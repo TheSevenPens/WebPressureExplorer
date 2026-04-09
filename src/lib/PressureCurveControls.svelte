@@ -62,6 +62,7 @@
       minimum: defaultParams.minimum,
       maximum: defaultParams.maximum,
       transitionWidth: defaultParams.transitionWidth,
+      minApproach: defaultParams.minApproach,
     });
   }
 </script>
@@ -204,6 +205,30 @@
         defaultValue={defaultParams.minimum}
         onValueChange={(value) => handleSliderValue('minimum', value)}
       />
+
+      <div class="param">
+        <span class="param-name">Min approach</span>
+        <label>
+          <input
+            type="radio"
+            name="minApproach"
+            value="clamp"
+            checked={params.minApproach === 'clamp'}
+            on:change={() => patchParams({ minApproach: 'clamp' })}
+          />
+          Clamp
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="minApproach"
+            value="cut"
+            checked={params.minApproach === 'cut'}
+            on:change={() => patchParams({ minApproach: 'cut' })}
+          />
+          Cut
+        </label>
+      </div>
     {/if}
 
     {#if curveActive}
