@@ -40,6 +40,7 @@
   let lastPos = null;
   let smoothedPressure = null;
   let smoothedPos = null;
+  let drawZeroPressure = false;
 
   function getSmoothedPressure(rawPressure) {
     const smoothing = Math.min(0.99, Math.max(0, Number(params.emaSmoothing ?? 0)));
@@ -212,8 +213,10 @@
 
     const currentPos = getSmoothedPos(pointerToCanvasPos(event, sourceCanvas));
 
-    const processedSize = Math.max(1, processedPressure.outputPressure * MAX_BRUSH_SIZE);
-    drawSegment(processedCtx, lastPos, currentPos, processedSize);
+    if (drawZeroPressure || processedPressure.outputPressure > 0) {
+      const processedSize = Math.max(1, processedPressure.outputPressure * MAX_BRUSH_SIZE);
+      drawSegment(processedCtx, lastPos, currentPos, processedSize);
+    }
 
     const rawSize = Math.max(1, rawPressure * MAX_BRUSH_SIZE);
     drawSegment(rawCtx, lastPos, currentPos, rawSize);
@@ -264,7 +267,13 @@
   <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvases} />
 
   <div class="split-canvas-wrap">
-    <div class="split-canvas-label">Pressure processing: ON</div>
+    <div class="split-canvas-label">
+      <span>Pressure processing: ON</span>
+      <label class="zero-pressure-toggle">
+        <input type="checkbox" bind:checked={drawZeroPressure} />
+        Draw at zero pressure
+      </label>
+    </div>
     <canvas
       class="draw-canvas"
       bind:this={processedCanvasEl}
@@ -303,6 +312,18 @@
     padding: 2px 6px;
     background: #f5f5f0;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .zero-pressure-toggle {
+    font-size: 11px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
   }
 
   .draw-canvas {
