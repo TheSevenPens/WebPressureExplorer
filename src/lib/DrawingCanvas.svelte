@@ -271,7 +271,7 @@
       <span>Pressure processing: ON</span>
       <label class="zero-pressure-toggle">
         <input type="checkbox" bind:checked={drawZeroPressure} />
-        Draw at zero pressure
+        Draw at zero effective pressure
       </label>
     </div>
     <canvas
