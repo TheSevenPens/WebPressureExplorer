@@ -19,6 +19,7 @@
   let containerEl;
   let dpr = 1;
   let lastSize = 0;
+  let lastDpr = 0;
   let isReady = false;
 
   $: if (isReady) {
@@ -156,12 +157,13 @@
     const size = Math.max(120, containerEl.clientWidth - 24);
     dpr = window.devicePixelRatio || 1;
 
-    if (size === lastSize && canvasEl.width > 0) {
+    if (size === lastSize && dpr === lastDpr && canvasEl.width > 0) {
       draw();
       return;
     }
 
     lastSize = size;
+    lastDpr = dpr;
     canvasEl.style.width = `${size}px`;
     canvasEl.style.height = `${Math.round(size * 0.6)}px`;
     canvasEl.width = Math.round(size * dpr);

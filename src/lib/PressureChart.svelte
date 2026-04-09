@@ -56,6 +56,7 @@
   let resizeObserver;
   let curveDpr = 1;
   let lastCurveSize = 0;
+  let lastCurveDpr = 0;
   let draggingNode = null;
   let selectedBezierPoint = null;
   let selectedBezierHandle = null;
@@ -381,12 +382,13 @@
     const size = Math.max(160, curvePanelEl.clientWidth - 24);
     curveDpr = window.devicePixelRatio || 1;
 
-    if (size === lastCurveSize && curveCanvasEl.width > 0) {
+    if (size === lastCurveSize && curveDpr === lastCurveDpr && curveCanvasEl.width > 0) {
       drawCurveCanvas();
       return;
     }
 
     lastCurveSize = size;
+    lastCurveDpr = curveDpr;
     curveCanvasEl.style.width = `${size}px`;
     curveCanvasEl.style.height = `${size}px`;
     curveCanvasEl.width = Math.round(size * curveDpr);
