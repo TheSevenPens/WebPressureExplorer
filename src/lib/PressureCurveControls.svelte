@@ -5,7 +5,6 @@
   import { MIN_APPROACH } from './uiConstants';
   import PositionControls from './PositionControls.svelte';
   import PressureSmoothingControls from './PressureSmoothingControls.svelte';
-  import PressureResponsePanel from './PressureResponsePanel.svelte';
   import CollapsibleSection from './CollapsibleSection.svelte';
 
   export let params;
@@ -17,8 +16,6 @@
   export let canRemoveBezierPoint = false;
   export let onAddBezierPoint = () => {};
   export let onRemoveBezierPoint = () => {};
-  export let onResponseDataChange = () => {};
-  export let onResponseShowCurveEffectChange = () => {};
 
   const PRESETS_STORAGE_KEY = 'wpe-user-presets';
 
@@ -370,13 +367,6 @@
       {:else}
         <button type="button" class="small-action-btn" on:click={() => showSaveInput = true}>Save current as preset</button>
       {/if}
-    </CollapsibleSection>
-
-    <CollapsibleSection title="Pressure Response" open={false}>
-      <PressureResponsePanel
-        onDataChange={onResponseDataChange}
-        onShowCurveEffectChange={onResponseShowCurveEffectChange}
-      />
     </CollapsibleSection>
   </div>
 </div>
