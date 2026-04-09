@@ -146,10 +146,7 @@
 <div id="details-panel">
   <div id="details-controls">
     <CollapsibleSection title="Pressure Curve" open={true}>
-    <div class="param">
-      <div class="param-header">
-        <span class="param-name">CurveType</span>
-      </div>
+    <div class="curve-type-row">
       <select value={params.curveType} on:change={handleCurveTypeChange}>
         <option value={CURVE_TYPE.PASSTHROUGH}>Passthrough</option>
         <option value={CURVE_TYPE.FLAT}>Flat</option>
@@ -158,6 +155,9 @@
         <option value={CURVE_TYPE.SIGMOID}>Sigmoid</option>
         <option value={CURVE_TYPE.BEZIER}>Bezier</option>
       </select>
+      {#if params.curveType !== CURVE_TYPE.PASSTHROUGH}
+        <button id="btn-reset" on:click={resetToDefaults}>↺</button>
+      {/if}
     </div>
 
     {#if bezierActive}
@@ -211,7 +211,7 @@
 
     {#if curveActive}
       <NamedSlider
-        name="CurveAmount"
+        name="Curve Amount"
         value={params.softness}
         min={-0.9}
         max={0.9}
@@ -228,52 +228,14 @@
 
 
     {#if params.curveType === CURVE_TYPE.EXTENDED || params.curveType === CURVE_TYPE.SIGMOID}
-      <NamedSlider
-        name="InputMinimum"
-        value={params.inputMinimum}
-        min={0}
-        max={1}
-        step={0.01}
-        sliderMin={0}
-        sliderMax={1}
-        sliderStep={0.01}
-        valueDecimals={2}
-        valuePrecision={2}
-        defaultValue={defaultParams.inputMinimum}
-        onValueChange={(value) => handleSliderValue('inputMinimum', value)}
-      />
+      <div class="node-values-table">
+        <span class="node-label">Input Min</span><span class="node-value">{params.inputMinimum.toFixed(2)}</span>
+        <span class="node-label">Input Max</span><span class="node-value">{params.inputMaximum.toFixed(2)}</span>
+        <span class="node-label">Output Min</span><span class="node-value">{params.minimum.toFixed(2)}</span>
+        <span class="node-label">Output Max</span><span class="node-value">{params.maximum.toFixed(2)}</span>
+      </div>
 
-      <NamedSlider
-        name="InputMaximum"
-        value={params.inputMaximum}
-        min={0}
-        max={1}
-        step={0.01}
-        sliderMin={0}
-        sliderMax={1}
-        sliderStep={0.01}
-        valueDecimals={2}
-        valuePrecision={2}
-        defaultValue={defaultParams.inputMaximum}
-        onValueChange={(value) => handleSliderValue('inputMaximum', value)}
-      />
-
-      <NamedSlider
-        name="OutputMinimum"
-        value={params.minimum}
-        min={0}
-        max={1}
-        step={0.01}
-        sliderMin={0}
-        sliderMax={1}
-        sliderStep={0.01}
-        valueDecimals={2}
-        valuePrecision={2}
-        defaultValue={defaultParams.minimum}
-        onValueChange={(value) => handleSliderValue('minimum', value)}
-      />
-
-      <div class="param">
+      <div class="param inline-radio-row">
         <span class="param-name">Min approach</span>
         <label>
           <input
@@ -296,26 +258,8 @@
           Cut
         </label>
       </div>
-
-      <NamedSlider
-        name="OutputMaximum"
-        value={params.maximum}
-        min={0}
-        max={1}
-        step={0.01}
-        sliderMin={0}
-        sliderMax={1}
-        sliderStep={0.01}
-        valueDecimals={2}
-        valuePrecision={2}
-        defaultValue={defaultParams.maximum}
-        onValueChange={(value) => handleSliderValue('maximum', value)}
-      />
     {/if}
 
-    {#if params.curveType !== CURVE_TYPE.PASSTHROUGH}
-      <button id="btn-reset" on:click={resetToDefaults}>Reset curve</button>
-    {/if}
     </CollapsibleSection>
 
     <CollapsibleSection title="Pressure Smoothing">

@@ -27,8 +27,14 @@
     isOpen = !isOpen;
   }
 
-  function loadSample(event) {
-    const index = parseInt(event.currentTarget.value, 10);
+  function handleSelectChange(event) {
+    const value = event.currentTarget.value;
+    if (value === 'upload') {
+      fileInputEl.click();
+      event.currentTarget.value = selectedSampleIndex;
+      return;
+    }
+    const index = parseInt(value, 10);
     selectedSampleIndex = index;
     if (isNaN(index) || index < 0) {
       clearData();
@@ -69,27 +75,15 @@
 </script>
 
 <div class="response-panel">
-  <button class="response-toggle" type="button" on:click={toggle}>
-    Load response data {isOpen ? '▴' : '▾'}
-  </button>
-
-  {#if isOpen}
     <div class="response-controls">
-      <select value={selectedSampleIndex} on:change={loadSample}>
-        <option value={-1}>— sample data —</option>
-        {#each SAMPLES as sample, i}
-          <option value={i}>{sample.label}</option>
-        {/each}
-      </select>
-
       <div class="response-row">
-        <button
-          type="button"
-          class="small-action-btn"
-          on:click={() => fileInputEl.click()}
-        >
-          Upload JSON
-        </button>
+        <select value={selectedSampleIndex} on:change={handleSelectChange}>
+          <option value={-1}>Select data</option>
+          {#each SAMPLES as sample, i}
+            <option value={i}>{sample.label}</option>
+          {/each}
+          <option value="upload">Upload JSON...</option>
+        </select>
         <input
           bind:this={fileInputEl}
           type="file"
@@ -118,7 +112,6 @@
         </div>
       {/if}
     </div>
-  {/if}
 </div>
 
 <style>

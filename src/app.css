@@ -299,9 +299,40 @@ input[type="checkbox"]:disabled {
   cursor: pointer;
 }
 
+.node-values-table {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 1px 6px;
+  font-size: 12px;
+}
+
+.node-label {
+  color: #555;
+}
+
+.node-value {
+  font-family: Consolas, 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--param-value);
+}
+
+.inline-radio-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.curve-type-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 #btn-reset {
-  margin-top: 2px;
-  padding: 6px 10px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   background: #f0f0f8;
   color: #555566;
   border: 1px solid #c8c8d8;
