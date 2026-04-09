@@ -1,4 +1,5 @@
 import { CURVE_TYPE } from './curveTypes';
+import { MIN_APPROACH, HANDLE_MODE } from './uiConstants';
 
 export function cubicHermite(t, y0, m0, y1, m1) {
   const t2 = t * t;
@@ -50,7 +51,7 @@ export function normalizeBezierPoints(points) {
       inY: Number(point?.inY ?? point?.y ?? 0),
       outX: Number(point?.outX ?? point?.x ?? 0),
       outY: Number(point?.outY ?? point?.y ?? 0),
-      handleMode: point?.handleMode === 'mirrored' ? 'mirrored' : 'broken',
+      handleMode: point?.handleMode === HANDLE_MODE.MIRRORED ? HANDLE_MODE.MIRRORED : HANDLE_MODE.BROKEN,
     }))
     .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
     .map((point) => ({
@@ -66,8 +67,8 @@ export function normalizeBezierPoints(points) {
 
   if (normalized.length === 0) {
     return [
-      { x: 0, y: 0, inX: 0, inY: 0, outX: 0.33, outY: 0, handleMode: 'broken' },
-      { x: 1, y: 1, inX: 0.67, inY: 1, outX: 1, outY: 1, handleMode: 'broken' },
+      { x: 0, y: 0, inX: 0, inY: 0, outX: 0.33, outY: 0, handleMode: HANDLE_MODE.BROKEN },
+      { x: 1, y: 1, inX: 0.67, inY: 1, outX: 1, outY: 1, handleMode: HANDLE_MODE.BROKEN },
     ];
   }
 
@@ -79,7 +80,7 @@ export function normalizeBezierPoints(points) {
       inY: normalized[0].y,
       outX: Math.min(1, normalized[0].x / 2),
       outY: normalized[0].y,
-      handleMode: 'broken',
+      handleMode: HANDLE_MODE.BROKEN,
     });
   } else {
     normalized[0] = { ...normalized[0], x: 0 };
@@ -94,7 +95,7 @@ export function normalizeBezierPoints(points) {
       inY: normalized[lastIndex].y,
       outX: 1,
       outY: normalized[lastIndex].y,
-      handleMode: 'broken',
+      handleMode: HANDLE_MODE.BROKEN,
     });
   } else {
     normalized[lastIndex] = { ...normalized[lastIndex], x: 1 };
@@ -108,15 +109,15 @@ export function normalizeBezierPoints(points) {
     point.outX = Math.max(point.x, Math.min(nextX, point.outX));
     point.inY = Math.min(1, Math.max(0, point.inY));
     point.outY = Math.min(1, Math.max(0, point.outY));
-    point.handleMode = point.handleMode === 'mirrored' ? 'mirrored' : 'broken';
+    point.handleMode = point.handleMode === HANDLE_MODE.MIRRORED ? HANDLE_MODE.MIRRORED : HANDLE_MODE.BROKEN;
   }
 
   normalized[0].inX = normalized[0].x;
   normalized[0].inY = normalized[0].y;
-  normalized[0].handleMode = 'broken';
+  normalized[0].handleMode = HANDLE_MODE.BROKEN;
   normalized[lastIndex].outX = normalized[lastIndex].x;
   normalized[lastIndex].outY = normalized[lastIndex].y;
-  normalized[lastIndex].handleMode = 'broken';
+  normalized[lastIndex].handleMode = HANDLE_MODE.BROKEN;
 
   return normalized;
 }
@@ -212,8 +213,8 @@ export function applyPressureCurve(x, params) {
     return evaluateCustomCurve(clampedX, bezierPoints);
   }
 
-  const minApproach = params.minApproach || 'clamp';
-  if (minApproach === 'cut' && x < inputMinimum) return 0;
+  const minApproach = params.minApproach || MIN_APPROACH.CLAMP;
+  if (minApproach === MIN_APPROACH.CUT && x < inputMinimum) return 0;
 
   const inputRange = inputMaximum - inputMinimum;
   const xNorm = inputRange > 0 ? Math.min(1, Math.max(0, (x - inputMinimum) / inputRange)) : 0;

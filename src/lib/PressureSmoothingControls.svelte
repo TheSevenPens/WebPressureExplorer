@@ -1,6 +1,7 @@
 <script>
   import NamedSlider from './NamedSlider.svelte';
   import { EMA_MAX, EMA_CURVE_EXPONENT } from './emaConstants';
+  import { SMOOTHING_ORDER } from './uiConstants';
 
   export let params;
 
@@ -23,9 +24,9 @@
     <div class="param-header">
       <span class="param-name">Smoothing Order</span>
     </div>
-    <select value={params.smoothingOrder ?? 'smooth-then-curve'} on:change={handleOrderChange}>
-      <option value="smooth-then-curve">Smooth then curve</option>
-      <option value="curve-then-smooth">Curve then smooth</option>
+    <select value={params.smoothingOrder ?? SMOOTHING_ORDER.SMOOTH_THEN_CURVE} on:change={handleOrderChange}>
+      <option value={SMOOTHING_ORDER.SMOOTH_THEN_CURVE}>Smooth then curve</option>
+      <option value={SMOOTHING_ORDER.CURVE_THEN_SMOOTH}>Curve then smooth</option>
     </select>
   </div>
 

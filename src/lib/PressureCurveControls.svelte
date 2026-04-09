@@ -2,6 +2,7 @@
   import NamedSlider from './NamedSlider.svelte';
   import { CURVE_TYPE } from './curveTypes';
   import { BEZIER_PRESETS } from './bezierPresets';
+  import { MIN_APPROACH } from './uiConstants';
   import PositionControls from './PositionControls.svelte';
   import PressureSmoothingControls from './PressureSmoothingControls.svelte';
   import PressureResponsePanel from './PressureResponsePanel.svelte';
@@ -102,7 +103,7 @@
       updates.inputMaximum = 1;
       updates.minimum = 0;
       updates.maximum = 1;
-      updates.minApproach = 'clamp';
+      updates.minApproach = MIN_APPROACH.CLAMP;
     }
     patchParams(updates);
   }
@@ -239,21 +240,6 @@
       />
     {/if}
 
-    {#if false}
-      <NamedSlider
-        name="Transition"
-        value={params.transitionWidth}
-        min={0}
-        max={0.5}
-        step={0.01}
-        sliderMin={0}
-        sliderMax={0.5}
-        sliderStep={0.01}
-        valueDecimals={2}
-        valuePrecision={2}
-        onValueChange={(value) => handleSliderValue('transitionWidth', value)}
-      />
-    {/if}
 
     {#if params.curveType === CURVE_TYPE.EXTENDED || params.curveType === CURVE_TYPE.SIGMOID}
       <NamedSlider
@@ -308,8 +294,8 @@
             type="radio"
             name="minApproach"
             value="clamp"
-            checked={params.minApproach === 'clamp'}
-            on:change={() => patchParams({ minApproach: 'clamp' })}
+            checked={params.minApproach === MIN_APPROACH.CLAMP}
+            on:change={() => patchParams({ minApproach: MIN_APPROACH.CLAMP })}
           />
           Clamp
         </label>
@@ -318,8 +304,8 @@
             type="radio"
             name="minApproach"
             value="cut"
-            checked={params.minApproach === 'cut'}
-            on:change={() => patchParams({ minApproach: 'cut' })}
+            checked={params.minApproach === MIN_APPROACH.CUT}
+            on:change={() => patchParams({ minApproach: MIN_APPROACH.CUT })}
           />
           Cut
         </label>

@@ -67,6 +67,8 @@ Toolbar showing pointer type, pressure flow values (raw -> intermediate -> outpu
 | Module | Purpose |
 |---|---|
 | `curveMath.js` | Pure math: curve evaluation, bezier normalization, Hermite interpolation |
+| `curveTypes.js` | `CURVE_TYPE` enum for all curve type identifiers |
+| `bezierPresets.js` | Built-in bezier curve preset point definitions |
 | `canvasConstants.js` | Shared padding/spacing values for canvas charts |
 | `canvasUtils.js` | Shared canvas drawing: background, grid, axis labels, indicator dots |
 | `emaConstants.js` | EMA smoothing constants (max, midpoint target, curve exponent) |
@@ -94,7 +96,7 @@ The `params` object:
 
 | Field | Type | Range | Purpose |
 |---|---|---|---|
-| `curveType` | string | `'null-effect'`, `'flat'`, `'basic'`, `'sigmoid'`, `'bezier'` | Active curve algorithm |
+| `curveType` | string | `'passthrough'`, `'flat'`, `'basic'`, `'extended'`, `'sigmoid'`, `'bezier'` | Active curve algorithm (see `CURVE_TYPE` in curveTypes.js) |
 | `softness` | number | -0.9 to 0.9 | Curve shape (power exponent / sigmoid steepness) |
 | `inputMinimum` | number | 0-1 | Start of input pressure range |
 | `inputMaximum` | number | 0-1 | End of input pressure range |
