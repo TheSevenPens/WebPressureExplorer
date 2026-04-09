@@ -1,6 +1,7 @@
 <script>
   import NamedSlider from './NamedSlider.svelte';
   import { CURVE_TYPE } from './curveTypes';
+  import { BEZIER_PRESETS } from './bezierPresets';
   import PositionControls from './PositionControls.svelte';
   import PressureSmoothingControls from './PressureSmoothingControls.svelte';
   import PressureResponsePanel from './PressureResponsePanel.svelte';
@@ -48,6 +49,16 @@
       updates.minApproach = 'clamp';
     }
     patchParams(updates);
+  }
+
+  function handleBezierPreset(event) {
+    const name = event.currentTarget.value;
+    if (!name) return;
+    const preset = BEZIER_PRESETS.find((p) => p.name === name);
+    if (preset) {
+      patchParams({ bezierPoints: preset.points.map((p) => ({ ...p })) });
+    }
+    event.currentTarget.value = '';
   }
 
   function resetToDefaults() {
@@ -107,6 +118,17 @@
     </div>
 
     {#if bezierActive}
+      <div class="param">
+        <div class="param-header">
+          <span class="param-name">Preset</span>
+        </div>
+        <select value="" on:change={handleBezierPreset}>
+          <option value="">Select a preset...</option>
+          {#each BEZIER_PRESETS as preset}
+            <option value={preset.name}>{preset.name}</option>
+          {/each}
+        </select>
+      </div>
       <div class="bezier-points-actions">
         <button
           type="button"
