@@ -296,20 +296,25 @@
         <div class="preset-empty">No saved presets</div>
       {/if}
 
+      <button type="button" class="small-action-btn" on:click={() => showSaveInput = true}>Save settings</button>
+
       {#if showSaveInput}
-        <div class="preset-save-row">
-          <input
-            type="text"
-            class="preset-name-input"
-            placeholder="Preset name"
-            bind:value={savePresetName}
-            on:keydown={(e) => { if (e.key === 'Enter') savePreset(); if (e.key === 'Escape') { showSaveInput = false; savePresetName = ''; } }}
-          />
-          <button type="button" class="small-action-btn" on:click={savePreset}>Save</button>
-          <button type="button" class="small-action-btn" on:click={() => { showSaveInput = false; savePresetName = ''; }}>Cancel</button>
+        <div class="preset-dialog-overlay" on:click|self={() => { showSaveInput = false; savePresetName = ''; }}>
+          <div class="preset-dialog">
+            <div class="preset-dialog-title">Save preset</div>
+            <input
+              type="text"
+              class="preset-name-input"
+              placeholder="Preset name"
+              bind:value={savePresetName}
+              on:keydown={(e) => { if (e.key === 'Enter') savePreset(); if (e.key === 'Escape') { showSaveInput = false; savePresetName = ''; } }}
+            />
+            <div class="preset-dialog-buttons">
+              <button type="button" class="small-action-btn" on:click={savePreset}>Save</button>
+              <button type="button" class="small-action-btn" on:click={() => { showSaveInput = false; savePresetName = ''; }}>Cancel</button>
+            </div>
+          </div>
         </div>
-      {:else}
-        <button type="button" class="small-action-btn" on:click={() => showSaveInput = true}>Save current as preset</button>
       {/if}
     </CollapsibleSection>
   </div>

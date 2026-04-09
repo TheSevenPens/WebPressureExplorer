@@ -45,7 +45,7 @@ The **DetailsPanel** — all sections are collapsible via CollapsibleSection. Co
   - **bezier**: preset dropdown, add/remove point buttons
 - **Pressure Smoothing**: Smoothing Amount slider, smoothing order radio buttons
 - **Position Smoothing**: Smoothing Amount slider
-- **Presets**: save/load/delete user presets via localStorage
+- **Presets**: save (via modal dialog)/load/delete user presets via localStorage
 
 ### PositionControls.svelte / PressureSmoothingControls.svelte
 Thin wrappers around NamedSlider for position and pressure smoothing respectively. PressureSmoothingControls also includes smoothing order radio buttons (smooth-then-curve vs curve-then-smooth).
