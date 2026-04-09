@@ -39,30 +39,30 @@ export function drawLabels(ctx, width, height, plotW, plotH, options = {}) {
   } = options;
 
   ctx.fillStyle = '#000000';
-  ctx.font = '9px Consolas, monospace';
+  ctx.font = '10px Consolas, monospace';
 
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   for (let i = 0; i <= 4; i += 1) {
-    const gx = PAD_LEFT + (i / 4) * plotW;
-    ctx.fillText(formatXLabel(i), gx, PAD_TOP + plotH + X_LABEL_SPACING);
+    const gx = Math.round(PAD_LEFT + (i / 4) * plotW);
+    ctx.fillText(formatXLabel(i), gx, Math.round(PAD_TOP + plotH + X_LABEL_SPACING));
   }
 
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   for (let i = 0; i <= 4; i += 1) {
-    const gy = PAD_TOP + plotH - (i / 4) * plotH;
-    ctx.fillText(formatYLabel(i), PAD_LEFT - Y_LABEL_SPACING, gy);
+    const gy = Math.round(PAD_TOP + plotH - (i / 4) * plotH);
+    ctx.fillText(formatYLabel(i), Math.round(PAD_LEFT - Y_LABEL_SPACING), gy);
   }
 
   ctx.fillStyle = '#000000';
-  ctx.font = '9px Segoe UI, sans-serif';
+  ctx.font = "10px 'Google Sans', 'Segoe UI', sans-serif";
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
-  ctx.fillText(xAxisLabel, PAD_LEFT + plotW / 2, height - X_AXIS_LABEL_SPACING);
+  ctx.fillText(xAxisLabel, Math.round(PAD_LEFT + plotW / 2), Math.round(height - X_AXIS_LABEL_SPACING));
 
   ctx.save();
-  ctx.translate(Y_AXIS_LABEL_SPACING, PAD_TOP + plotH / 2);
+  ctx.translate(Math.round(Y_AXIS_LABEL_SPACING), Math.round(PAD_TOP + plotH / 2));
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';

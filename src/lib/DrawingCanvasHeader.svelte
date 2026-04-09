@@ -4,6 +4,10 @@
   export let el = undefined;
   export let brushSize = 40;
   export let onBrushSizeChange = () => {};
+  export let colorMode = 'black';
+  export let onColorModeChange = () => {};
+  export let pressureControls = 'size';
+  export let onPressureControlsChange = () => {};
 </script>
 
 <div id="toolbar" bind:this={el}>
@@ -33,6 +37,20 @@
   </div>
   <div class="toolbar-row toolbar-controls">
     <button id="btn-clear" on:click={onClear}>Clear</button>
+    <span class="info-item">
+      Color:
+      <select class="toolbar-select" value={colorMode} on:change={(e) => onColorModeChange(e.currentTarget.value)}>
+        <option value="black">Black</option>
+        <option value="random">Random</option>
+      </select>
+    </span>
+    <span class="info-item">
+      Pressure controls:
+      <select class="toolbar-select" value={pressureControls} on:change={(e) => onPressureControlsChange(e.currentTarget.value)}>
+        <option value="size">Size</option>
+        <option value="opacity">Opacity</option>
+      </select>
+    </span>
     <span class="info-item brush-size-control">
       Brush:
       <input
@@ -87,6 +105,11 @@
 
   .brush-size-control input[type="range"] {
     width: 80px;
+  }
+
+  .toolbar-select {
+    font-size: 11px;
+    padding: 1px 3px;
   }
 
   .brush-size-input {

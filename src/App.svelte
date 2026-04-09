@@ -42,6 +42,7 @@
   let params = { ...DEFAULT_PARAMS };
   let livePressure = null;
   let liveRawPressure = null;
+  let showDriverWarning = true;
   function preventContextMenu(event) {
     event.preventDefault();
   }
@@ -54,6 +55,12 @@
   });
 </script>
 
+{#if showDriverWarning}
+  <div class="driver-warning">
+    <span>⚠️ For best results, set your tablet driver's pressure curve to its default (linear) state before using this tool.</span>
+    <button type="button" class="driver-warning-dismiss" on:click={() => showDriverWarning = false}>✕</button>
+  </div>
+{/if}
 <div id="layout">
   <PressureChart bind:params {livePressure} {liveRawPressure} defaultParams={DEFAULT_PARAMS} />
   <DrawingCanvas bind:livePressure bind:liveRawPressure {params} />
