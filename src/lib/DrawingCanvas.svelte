@@ -234,6 +234,24 @@
     resetInfo();
   }
 
+  async function copyCanvas(canvasEl) {
+    canvasEl.toBlob(async (blob) => {
+      if (!blob) return;
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      } catch (error) {
+        console.error('Clipboard write failed:', error);
+      }
+    }, 'image/png');
+  }
+
+  function saveCanvas(canvasEl, filename) {
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = canvasEl.toDataURL('image/png');
+    link.click();
+  }
+
   function onKeyDown(event) {
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
@@ -273,6 +291,10 @@
         <input type="checkbox" bind:checked={drawZeroPressure} />
         Draw at zero effective pressure
       </label>
+      <span class="canvas-export-buttons">
+        <button type="button" class="canvas-export-btn" on:click={() => copyCanvas(processedCanvasEl)}>Copy</button>
+        <button type="button" class="canvas-export-btn" on:click={() => saveCanvas(processedCanvasEl, 'processed.png')}>Save</button>
+      </span>
     </div>
     <canvas
       class="draw-canvas"
@@ -285,7 +307,13 @@
 
     <div class="split-canvas-divider"></div>
 
-    <div class="split-canvas-label">Pressure processing: OFF</div>
+    <div class="split-canvas-label">
+      <span>Pressure processing: OFF</span>
+      <span class="canvas-export-buttons">
+        <button type="button" class="canvas-export-btn" on:click={() => copyCanvas(rawCanvasEl)}>Copy</button>
+        <button type="button" class="canvas-export-btn" on:click={() => saveCanvas(rawCanvasEl, 'unprocessed.png')}>Save</button>
+      </span>
+    </div>
     <canvas
       class="draw-canvas"
       bind:this={rawCanvasEl}
@@ -317,6 +345,25 @@
     display: flex;
     align-items: center;
     gap: 12px;
+  }
+
+  .canvas-export-buttons {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+  }
+
+  .canvas-export-btn {
+    font-size: 11px;
+    padding: 1px 8px;
+    cursor: pointer;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    background: #f5f5f0;
+  }
+
+  .canvas-export-btn:hover {
+    background: #ddd;
   }
 
   .zero-pressure-toggle {
