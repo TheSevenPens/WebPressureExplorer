@@ -18,7 +18,7 @@
 </script>
 
 <div class="param-group">
-  <div class="param-group-title">Input Smoothing</div>
+  <div class="param-group-title">Pressure Processing</div>
   <div class="param">
     <div class="param-header">
       <span class="param-name">Smoothing Order</span>
