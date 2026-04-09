@@ -5,6 +5,7 @@
 
   const MAX_BRUSH_SIZE = 40;
   const CANVAS_BG = '#f5f5f0';
+  const DIVIDER_HEIGHT = 1;
 
   const initialInfo = {
     type: '---',
@@ -27,8 +28,10 @@
 
   let drawPanelEl;
   let toolbarEl;
-  let drawCanvasEl;
-  let drawCtx;
+  let processedCanvasEl;
+  let rawCanvasEl;
+  let processedCtx;
+  let rawCtx;
   let resizeObserver;
   let resizeRafId = 0;
   let lastDeviceWidth = 0;
@@ -82,10 +85,10 @@
     };
   }
 
-  function pointerToCanvasPos(pointerEvent) {
-    const rect = drawCanvasEl.getBoundingClientRect();
-    const scaleX = rect.width > 0 ? drawCanvasEl.width / rect.width : 1;
-    const scaleY = rect.height > 0 ? drawCanvasEl.height / rect.height : 1;
+  function pointerToCanvasPos(pointerEvent, canvasEl) {
+    const rect = canvasEl.getBoundingClientRect();
+    const scaleX = rect.width > 0 ? canvasEl.width / rect.width : 1;
+    const scaleY = rect.height > 0 ? canvasEl.height / rect.height : 1;
     return {
       x: (pointerEvent.clientX - rect.left) * scaleX,
       y: (pointerEvent.clientY - rect.top) * scaleY,
@@ -117,55 +120,50 @@
     if (resizeRafId) return;
     resizeRafId = requestAnimationFrame(() => {
       resizeRafId = 0;
-      resizeDrawCanvas();
+      resizeDrawCanvases();
     });
   }
 
-  function resizeDrawCanvas() {
-    if (!drawCanvasEl || !drawCtx || !drawPanelEl || !toolbarEl) return;
+  function resizeDrawCanvases() {
+    if (!processedCanvasEl || !processedCtx || !rawCanvasEl || !rawCtx || !drawPanelEl || !toolbarEl) return;
 
-    // Use container geometry so the canvas always fills the full right panel.
     const cssWidth = Math.max(1, drawPanelEl.clientWidth);
-    const cssHeight = Math.max(1, drawPanelEl.clientHeight - toolbarEl.offsetHeight);
+    const canvasHeight = Math.max(1, processedCanvasEl.clientHeight);
 
-    drawCanvasEl.style.width = `${cssWidth}px`;
-    drawCanvasEl.style.height = `${cssHeight}px`;
-
-    const nextDeviceWidth = cssWidth;
-    const nextDeviceHeight = cssHeight;
-
-    // Avoid resetting backing store when size did not actually change.
-    if (nextDeviceWidth === lastDeviceWidth && nextDeviceHeight === lastDeviceHeight) {
+    if (cssWidth === lastDeviceWidth && canvasHeight === lastDeviceHeight) {
       return;
     }
 
-    lastDeviceWidth = nextDeviceWidth;
-    lastDeviceHeight = nextDeviceHeight;
+    lastDeviceWidth = cssWidth;
+    lastDeviceHeight = canvasHeight;
 
-    drawCanvasEl.width = nextDeviceWidth;
-    drawCanvasEl.height = nextDeviceHeight;
+    for (const canvasEl of [processedCanvasEl, rawCanvasEl]) {
+      canvasEl.width = cssWidth;
+      canvasEl.height = canvasHeight;
+    }
 
-    drawCtx.setTransform(1, 0, 0, 1, 0, 0);
-    clearDrawCanvas();
+    processedCtx.setTransform(1, 0, 0, 1, 0, 0);
+    rawCtx.setTransform(1, 0, 0, 1, 0, 0);
+    clearDrawCanvases();
   }
 
-  function clearDrawCanvas() {
-    if (!drawCanvasEl || !drawCtx) return;
-    const cssWidth = Math.max(1, drawCanvasEl.width);
-    const cssHeight = Math.max(1, drawCanvasEl.height);
-    drawCtx.fillStyle = CANVAS_BG;
-    drawCtx.fillRect(0, 0, cssWidth, cssHeight);
+  function clearDrawCanvases() {
+    for (const [ctx, canvasEl] of [[processedCtx, processedCanvasEl], [rawCtx, rawCanvasEl]]) {
+      if (!ctx || !canvasEl) continue;
+      ctx.fillStyle = CANVAS_BG;
+      ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+    }
   }
 
-  function drawSegment(from, to, size) {
-    drawCtx.lineWidth = size;
-    drawCtx.strokeStyle = '#1a1a2e';
-    drawCtx.lineCap = 'round';
-    drawCtx.lineJoin = 'round';
-    drawCtx.beginPath();
-    drawCtx.moveTo(from.x, from.y);
-    drawCtx.lineTo(to.x, to.y);
-    drawCtx.stroke();
+  function drawSegment(ctx, from, to, size) {
+    ctx.lineWidth = size;
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
   }
 
   function updateInfo(pointerEvent, rawPressure, processedPressure) {
@@ -189,21 +187,21 @@
     info = { ...initialInfo };
   }
 
-  function onDrawPointerDown(event) {
+  function handlePointerDown(event, sourceCanvas) {
     isDrawing = true;
-    lastPos = getSmoothedPos(pointerToCanvasPos(event));
+    lastPos = getSmoothedPos(pointerToCanvasPos(event, sourceCanvas));
     const rawPressure = Number(event.pressure ?? 0);
     const processedPressure = processPressure(rawPressure);
     liveRawPressure = rawPressure;
     livePressure = processedPressure.preCurvePressure;
     updateInfo(event, rawPressure, processedPressure);
 
-    if (drawCanvasEl?.setPointerCapture) {
-      drawCanvasEl.setPointerCapture(event.pointerId);
+    if (sourceCanvas?.setPointerCapture) {
+      sourceCanvas.setPointerCapture(event.pointerId);
     }
   }
 
-  function onDrawPointerMove(event) {
+  function handlePointerMove(event, sourceCanvas) {
     const rawPressure = Number(event.pressure ?? 0);
     const processedPressure = processPressure(rawPressure);
     liveRawPressure = rawPressure;
@@ -212,9 +210,14 @@
 
     if (!isDrawing) return;
 
-    const currentPos = getSmoothedPos(pointerToCanvasPos(event));
-    const size = Math.max(1, processedPressure.outputPressure * MAX_BRUSH_SIZE);
-    drawSegment(lastPos, currentPos, size);
+    const currentPos = getSmoothedPos(pointerToCanvasPos(event, sourceCanvas));
+
+    const processedSize = Math.max(1, processedPressure.outputPressure * MAX_BRUSH_SIZE);
+    drawSegment(processedCtx, lastPos, currentPos, processedSize);
+
+    const rawSize = Math.max(1, rawPressure * MAX_BRUSH_SIZE);
+    drawSegment(rawCtx, lastPos, currentPos, rawSize);
+
     lastPos = currentPos;
   }
 
@@ -231,12 +234,13 @@
   function onKeyDown(event) {
     if (event.key === 'Delete' || event.key === 'Backspace') {
       event.preventDefault();
-      clearDrawCanvas();
+      clearDrawCanvases();
     }
   }
 
   onMount(() => {
-    drawCtx = drawCanvasEl.getContext('2d');
+    processedCtx = processedCanvasEl.getContext('2d');
+    rawCtx = rawCanvasEl.getContext('2d');
     scheduleResize();
 
     resizeObserver = new ResizeObserver(scheduleResize);
@@ -257,14 +261,63 @@
 </script>
 
 <div id="draw-panel" bind:this={drawPanelEl}>
-  <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvas} />
+  <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvases} />
 
-  <canvas
-    id="draw-canvas"
-    bind:this={drawCanvasEl}
-    on:pointerdown={onDrawPointerDown}
-    on:pointermove={onDrawPointerMove}
-    on:pointerup={stopDrawing}
-    on:pointerleave={stopDrawing}
-  ></canvas>
+  <div class="split-canvas-wrap">
+    <div class="split-canvas-label">Pressure processing: ON</div>
+    <canvas
+      class="draw-canvas"
+      bind:this={processedCanvasEl}
+      on:pointerdown={(e) => handlePointerDown(e, processedCanvasEl)}
+      on:pointermove={(e) => handlePointerMove(e, processedCanvasEl)}
+      on:pointerup={stopDrawing}
+      on:pointerleave={stopDrawing}
+    ></canvas>
+
+    <div class="split-canvas-divider"></div>
+
+    <div class="split-canvas-label">Pressure processing: OFF</div>
+    <canvas
+      class="draw-canvas"
+      bind:this={rawCanvasEl}
+      on:pointerdown={(e) => handlePointerDown(e, rawCanvasEl)}
+      on:pointermove={(e) => handlePointerMove(e, rawCanvasEl)}
+      on:pointerup={stopDrawing}
+      on:pointerleave={stopDrawing}
+    ></canvas>
+  </div>
 </div>
+
+<style>
+  .split-canvas-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+  }
+
+  .split-canvas-label {
+    font-size: 13px;
+    color: #000;
+    padding: 2px 6px;
+    background: #f5f5f0;
+    flex-shrink: 0;
+  }
+
+  .draw-canvas {
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    display: block;
+    touch-action: none;
+    overscroll-behavior: none;
+    cursor: crosshair;
+  }
+
+  .split-canvas-divider {
+    height: 1px;
+    background: #ccc;
+    flex-shrink: 0;
+  }
+</style>

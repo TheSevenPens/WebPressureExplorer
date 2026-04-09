@@ -57,7 +57,7 @@ Standalone canvas chart rendering a pen's physical pressure response (grams-forc
 Reusable labeled slider component. Features: click-to-edit value display, right-click context menu (min/max/reset), optional non-linear (power-law curved) slider response, configurable display formatting.
 
 ### DrawingCanvas.svelte
-Pressure-sensitive drawing surface using Canvas 2D. Processes pointer events through the full pressure pipeline: raw pressure -> EMA smoothing -> curve application (order configurable) -> position smoothing -> brush rendering. Displays live info via DrawingCanvasHeader. Clear via Delete/Backspace or button.
+Split drawing surface with two canvases. The top canvas ("Pressure processing: ON") renders strokes using the full pressure pipeline (EMA smoothing + curve application + position smoothing). The bottom canvas ("Pressure processing: OFF") renders the same strokes using raw unprocessed pen pressure. Drawing in either half mirrors to the other, allowing direct visual comparison. Displays live info via DrawingCanvasHeader. Clear via Delete/Backspace or button.
 
 ### DrawingCanvasHeader.svelte
 Toolbar showing pointer type, pressure flow values (raw -> intermediate -> output), tilt angles, azimuth, altitude, and a clear button.

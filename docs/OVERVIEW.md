@@ -8,7 +8,7 @@ The app provides two side-by-side panels:
 
 - **Pressure Curve Editor** (left) — An interactive chart where users select a curve type (basic, sigmoid, bezier, flat, or null-effect), adjust parameters via sliders and draggable control nodes, and see the resulting pressure mapping function in real time.
 
-- **Drawing Canvas** (right) — A pressure-sensitive drawing surface that applies the configured curve to live pen input. Users can draw strokes and immediately feel how their curve settings affect brush behavior.
+- **Drawing Canvas** (right) — A split drawing surface with two halves. The top half ("Pressure processing: ON") applies the full pressure pipeline (smoothing + curve). The bottom half ("Pressure processing: OFF") uses raw unprocessed pen pressure. Drawing in either half mirrors the stroke to the other, making it easy to compare the effect of pressure processing side by side.
 
 ## Key features
 
@@ -20,6 +20,7 @@ The app provides two side-by-side panels:
 - **Live pressure indicators** on the chart showing raw (purple) and effective (green) pressure positions in real time
 - **Pressure response data** — load pen hardware measurement data (physical grams-force vs logical pressure %) from bundled samples or uploaded JSON files, with optional curve overlay
 - **Export** — copy the chart to clipboard as PNG or save as JPEG (full chart or plot area only)
+- **Split canvas comparison** — draw once, see the stroke rendered with and without pressure processing simultaneously
 - **Direct value editing** — click any slider value to type an exact number; right-click sliders for min/max/reset
 
 ## Tech stack
