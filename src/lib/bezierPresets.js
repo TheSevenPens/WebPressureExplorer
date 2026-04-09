@@ -23,9 +23,8 @@ export const BEZIER_PRESETS = [
   {
     name: 'S-Curve',
     points: [
-      { x: 0, y: 0, inX: 0, inY: 0, outX: 0.4, outY: 0, handleMode: 'broken' },
-      { x: 0.5, y: 0.5, inX: 0.35, inY: 0.5, outX: 0.65, outY: 0.5, handleMode: 'mirrored' },
-      { x: 1, y: 1, inX: 0.6, inY: 1, outX: 1, outY: 1, handleMode: 'broken' },
+      { x: 0, y: 0, inX: 0, inY: 0, outX: 0.45, outY: 0, handleMode: 'broken' },
+      { x: 1, y: 1, inX: 0.55, inY: 1, outX: 1, outY: 1, handleMode: 'broken' },
     ],
   },
   {
