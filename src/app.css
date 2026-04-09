@@ -25,13 +25,42 @@ body {
 
 #app {
   height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 #layout {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
+}
+
+.driver-warning {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #ffdd57;
+  border-bottom: 1px solid #d4a800;
+  color: #3a2e00;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.driver-warning-dismiss {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #664d03;
+  padding: 0 4px;
+}
+
+.driver-warning-dismiss:hover {
+  color: #000;
 }
 
 #curve-panel {
