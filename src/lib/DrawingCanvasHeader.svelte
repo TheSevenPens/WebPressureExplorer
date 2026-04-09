@@ -1,19 +1,21 @@
 <script>
+  import { SMOOTHING_ORDER, COLOR_MODE, PRESSURE_CONTROL } from './uiConstants';
+
   export let info;
   export let onClear = () => {};
   export let el = undefined;
   export let brushSize = 40;
   export let onBrushSizeChange = () => {};
-  export let colorMode = 'black';
+  export let colorMode = COLOR_MODE.BLACK;
   export let onColorModeChange = () => {};
-  export let pressureControls = 'size';
+  export let pressureControls = PRESSURE_CONTROL.SIZE;
   export let onPressureControlsChange = () => {};
 </script>
 
 <div id="toolbar" bind:this={el}>
   <div class="toolbar-row toolbar-data">
     <span class="info-item">Type: <span class="val">{info.type}</span></span>
-    {#if info.smoothingOrder === 'curve-then-smooth'}
+    {#if info.smoothingOrder === SMOOTHING_ORDER.CURVE_THEN_SMOOTH}
       <span class="info-item">
         Pressure: <span class="val mono">{info.pressureRaw}</span>
         <span class="arrow">→</span>
@@ -40,15 +42,15 @@
     <span class="info-item">
       Color:
       <select class="toolbar-select" value={colorMode} on:change={(e) => onColorModeChange(e.currentTarget.value)}>
-        <option value="black">Black</option>
-        <option value="random">Random</option>
+        <option value={COLOR_MODE.BLACK}>Black</option>
+        <option value={COLOR_MODE.RANDOM}>Random</option>
       </select>
     </span>
     <span class="info-item">
       Pressure controls:
       <select class="toolbar-select" value={pressureControls} on:change={(e) => onPressureControlsChange(e.currentTarget.value)}>
-        <option value="size">Size</option>
-        <option value="opacity">Opacity</option>
+        <option value={PRESSURE_CONTROL.SIZE}>Size</option>
+        <option value={PRESSURE_CONTROL.OPACITY}>Opacity</option>
       </select>
     </span>
     <span class="info-item brush-size-control">

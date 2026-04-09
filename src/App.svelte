@@ -3,18 +3,19 @@
   import PressureChart from './lib/PressureChart.svelte';
   import DrawingCanvas from './lib/DrawingCanvas.svelte';
   import { CURVE_TYPE } from './lib/curveTypes';
+  import { SMOOTHING_ORDER, MIN_APPROACH, HANDLE_MODE } from './lib/uiConstants';
 
   const DEFAULT_PARAMS = {
     emaSmoothing: 0,
     positionEmaSmoothing: 0,
-    smoothingOrder: 'smooth-then-curve',
+    smoothingOrder: SMOOTHING_ORDER.SMOOTH_THEN_CURVE,
     softness: 0.0,
     inputMinimum: 0,
     inputMaximum: 1,
     minimum: 0,
     maximum: 1,
     curveType: CURVE_TYPE.BASIC,
-    minApproach: 'clamp',
+    minApproach: MIN_APPROACH.CLAMP,
     transitionWidth: 0,
     flatLevel: 0.5,
     bezierPoints: [
@@ -25,7 +26,7 @@
         inY: 0,
         outX: 0.33,
         outY: 0,
-        handleMode: 'broken',
+        handleMode: HANDLE_MODE.BROKEN,
       },
       {
         x: 1,
@@ -34,7 +35,7 @@
         inY: 1,
         outX: 1,
         outY: 1,
-        handleMode: 'broken',
+        handleMode: HANDLE_MODE.BROKEN,
       },
     ],
   };

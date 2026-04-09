@@ -2,9 +2,11 @@
   import NamedSlider from './NamedSlider.svelte';
   import { CURVE_TYPE } from './curveTypes';
   import { BEZIER_PRESETS } from './bezierPresets';
+  import { MIN_APPROACH } from './uiConstants';
   import PositionControls from './PositionControls.svelte';
   import PressureSmoothingControls from './PressureSmoothingControls.svelte';
   import PressureResponsePanel from './PressureResponsePanel.svelte';
+  import CollapsibleSection from './CollapsibleSection.svelte';
 
   export let params;
   export let defaultParams;
@@ -102,7 +104,7 @@
       updates.inputMaximum = 1;
       updates.minimum = 0;
       updates.maximum = 1;
-      updates.minApproach = 'clamp';
+      updates.minApproach = MIN_APPROACH.CLAMP;
     }
     patchParams(updates);
   }
@@ -146,19 +148,7 @@
 
 <div id="details-panel">
   <div id="details-controls">
-    <div class="control-section">
-      <PositionControls bind:params />
-    </div>
-
-    <div class="control-section">
-      <PressureSmoothingControls bind:params />
-    </div>
-
-    <div class="control-section">
-      <div class="param-group">
-        <div class="param-group-title">Pressure Curve</div>
-      </div>
-
+    <CollapsibleSection title="Pressure Curve" open={true}>
     <div class="param">
       <div class="param-header">
         <span class="param-name">CurveType</span>
@@ -239,21 +229,6 @@
       />
     {/if}
 
-    {#if false}
-      <NamedSlider
-        name="Transition"
-        value={params.transitionWidth}
-        min={0}
-        max={0.5}
-        step={0.01}
-        sliderMin={0}
-        sliderMax={0.5}
-        sliderStep={0.01}
-        valueDecimals={2}
-        valuePrecision={2}
-        onValueChange={(value) => handleSliderValue('transitionWidth', value)}
-      />
-    {/if}
 
     {#if params.curveType === CURVE_TYPE.EXTENDED || params.curveType === CURVE_TYPE.SIGMOID}
       <NamedSlider
@@ -308,8 +283,8 @@
             type="radio"
             name="minApproach"
             value="clamp"
-            checked={params.minApproach === 'clamp'}
-            on:change={() => patchParams({ minApproach: 'clamp' })}
+            checked={params.minApproach === MIN_APPROACH.CLAMP}
+            on:change={() => patchParams({ minApproach: MIN_APPROACH.CLAMP })}
           />
           Clamp
         </label>
@@ -318,8 +293,8 @@
             type="radio"
             name="minApproach"
             value="cut"
-            checked={params.minApproach === 'cut'}
-            on:change={() => patchParams({ minApproach: 'cut' })}
+            checked={params.minApproach === MIN_APPROACH.CUT}
+            on:change={() => patchParams({ minApproach: MIN_APPROACH.CUT })}
           />
           Cut
         </label>
@@ -344,13 +319,17 @@
     {#if params.curveType !== CURVE_TYPE.PASSTHROUGH}
       <button id="btn-reset" on:click={resetToDefaults}>Reset curve</button>
     {/if}
-    </div>
+    </CollapsibleSection>
 
-    <div class="control-section">
-      <div class="param-group">
-        <div class="param-group-title">Presets</div>
-      </div>
+    <CollapsibleSection title="Pressure Smoothing">
+      <PressureSmoothingControls bind:params />
+    </CollapsibleSection>
 
+    <CollapsibleSection title="Position Smoothing">
+      <PositionControls bind:params />
+    </CollapsibleSection>
+
+    <CollapsibleSection title="Presets" open={false}>
       {#if pendingLoadPreset}
         <div class="preset-confirm">
           Load "{pendingLoadPreset}"? This will replace all current settings.
@@ -391,16 +370,13 @@
       {:else}
         <button type="button" class="small-action-btn" on:click={() => showSaveInput = true}>Save current as preset</button>
       {/if}
-    </div>
+    </CollapsibleSection>
 
-    <div class="control-section">
-      <div class="param-group">
-        <div class="param-group-title">Pressure Response</div>
-      </div>
+    <CollapsibleSection title="Pressure Response" open={false}>
       <PressureResponsePanel
         onDataChange={onResponseDataChange}
         onShowCurveEffectChange={onResponseShowCurveEffectChange}
       />
-    </div>
+    </CollapsibleSection>
   </div>
 </div>

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { applyPressureCurve, normalizeBezierPoints } from './curveMath';
   import { CURVE_TYPE } from './curveTypes';
+  import { MIN_APPROACH, HANDLE_MODE } from './uiConstants';
   import { PAD_LEFT, PAD_TOP, PAD_RIGHT, PAD_BOTTOM } from './canvasConstants';
   import { drawBackground, drawGrid as drawCanvasGrid, drawLabels as drawCanvasLabels, drawIndicator } from './canvasUtils';
   import PressureChartFormat from './PressureChartFormat.svelte';
@@ -175,7 +176,7 @@
       inY: Math.round(((left.y * 0.66 + right.y * 0.34)) * 100) / 100,
       outX: Math.round(((left.x * 0.34 + right.x * 0.66)) * 100) / 100,
       outY: Math.round(((left.y * 0.34 + right.y * 0.66)) * 100) / 100,
-      handleMode: 'broken',
+      handleMode: HANDLE_MODE.BROKEN,
     };
 
     const next = [...bezierPoints];
@@ -281,7 +282,7 @@
       inY: y,
       outX: Math.round((x + nextX) * 50) / 100,
       outY: y,
-      handleMode: 'broken',
+      handleMode: HANDLE_MODE.BROKEN,
     });
     updateBezierPoints(next);
     selectedBezierPoint = insertIndex;
@@ -369,7 +370,7 @@
     const next = [...bezierPoints];
     next[bezierContextPointIndex] = {
       ...next[bezierContextPointIndex],
-      handleMode: mode === 'mirrored' ? 'mirrored' : 'broken',
+      handleMode: mode === HANDLE_MODE.MIRRORED ? HANDLE_MODE.MIRRORED : HANDLE_MODE.BROKEN,
     };
 
     updateBezierPoints(next);
@@ -521,7 +522,7 @@
 
       curveCtx.strokeStyle = CURVE_COLOR;
       curveCtx.beginPath();
-      if (params.minApproach === 'cut') {
+      if (params.minApproach === MIN_APPROACH.CUT) {
         curveCtx.moveTo(PAD_LEFT, PAD_TOP + plotH);
         curveCtx.lineTo(PAD_LEFT + inMin * plotW, PAD_TOP + plotH);
         curveCtx.lineTo(PAD_LEFT + inMin * plotW, PAD_TOP + plotH - outMin * plotH);
@@ -715,14 +716,14 @@
       if (handle === 'in') {
         point.inX = clampInX(xVal);
         point.inY = yVal;
-        if (point.handleMode === 'mirrored' && pointIndex > 0 && pointIndex < next.length - 1) {
+        if (point.handleMode === HANDLE_MODE.MIRRORED && pointIndex > 0 && pointIndex < next.length - 1) {
           point.outX = clampOutX(point.x + (point.x - point.inX));
           point.outY = Math.min(1, Math.max(0, point.y + (point.y - point.inY)));
         }
       } else {
         point.outX = clampOutX(xVal);
         point.outY = yVal;
-        if (point.handleMode === 'mirrored' && pointIndex > 0 && pointIndex < next.length - 1) {
+        if (point.handleMode === HANDLE_MODE.MIRRORED && pointIndex > 0 && pointIndex < next.length - 1) {
           point.inX = clampInX(point.x - (point.outX - point.x));
           point.inY = Math.min(1, Math.max(0, point.y - (point.outY - point.y)));
         }
@@ -939,15 +940,15 @@
         {#if isRemovableBezierPoint(bezierContextPointIndex)}
           <button
             type="button"
-            disabled={bezierPoints[bezierContextPointIndex].handleMode === 'mirrored'}
-            on:click={(event) => setBezierPointHandleModeFromContextMenu('mirrored', event)}
+            disabled={bezierPoints[bezierContextPointIndex].handleMode === HANDLE_MODE.MIRRORED}
+            on:click={(event) => setBezierPointHandleModeFromContextMenu(HANDLE_MODE.MIRRORED, event)}
           >
             Handle mode: mirrored
           </button>
           <button
             type="button"
-            disabled={bezierPoints[bezierContextPointIndex].handleMode === 'broken'}
-            on:click={(event) => setBezierPointHandleModeFromContextMenu('broken', event)}
+            disabled={bezierPoints[bezierContextPointIndex].handleMode === HANDLE_MODE.BROKEN}
+            on:click={(event) => setBezierPointHandleModeFromContextMenu(HANDLE_MODE.BROKEN, event)}
           >
             Handle mode: broken
           </button>

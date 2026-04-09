@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { applyPressureCurve } from './curveMath';
+  import { SMOOTHING_ORDER, COLOR_MODE, PRESSURE_CONTROL } from './uiConstants';
   import DrawingCanvasHeader from './DrawingCanvasHeader.svelte';
 
   const CANVAS_BG = '#f5f5f0';
@@ -18,7 +19,7 @@
     pressureCurved: '---',
     pressureSmoothed: '---',
     pressureOutput: '---',
-    smoothingOrder: 'smooth-then-curve',
+    smoothingOrder: SMOOTHING_ORDER.SMOOTH_THEN_CURVE,
     tiltX: '---',
     tiltY: '---',
     azimuth: '---',
@@ -47,13 +48,13 @@
   let smoothedPos = null;
   let drawZeroPressure = false;
   let brushSize = 40;
-  let colorMode = 'black';
-  let pressureControls = 'size';
+  let colorMode = COLOR_MODE.BLACK;
+  let pressureControls = PRESSURE_CONTROL.SIZE;
   let strokeColor = '#1a1a2e';
   let lastColorIndex = -1;
 
   function pickStrokeColor() {
-    if (colorMode === 'black') {
+    if (colorMode === COLOR_MODE.BLACK) {
       strokeColor = '#1a1a2e';
       return;
     }
@@ -84,9 +85,9 @@
   }
 
   function processPressure(rawPressure) {
-    const order = params.smoothingOrder ?? 'smooth-then-curve';
+    const order = params.smoothingOrder ?? SMOOTHING_ORDER.SMOOTH_THEN_CURVE;
 
-    if (order === 'curve-then-smooth') {
+    if (order === SMOOTHING_ORDER.CURVE_THEN_SMOOTH) {
       const curved = applyPressureCurve(rawPressure, params);
       const smoothed = getSmoothedPressure(curved);
       return {
@@ -101,7 +102,7 @@
     const smoothed = getSmoothedPressure(rawPressure);
     const curved = applyPressureCurve(smoothed, params);
     return {
-      order: 'smooth-then-curve',
+      order: SMOOTHING_ORDER.SMOOTH_THEN_CURVE,
       preCurvePressure: smoothed,
       curvedPressure: curved,
       smoothedPressure: smoothed,
@@ -240,13 +241,13 @@
     const currentPos = getSmoothedPos(pointerToCanvasPos(event, sourceCanvas));
 
     if (drawZeroPressure || processedPressure.outputPressure > 0) {
-      const pSize = pressureControls === 'opacity' ? brushSize : Math.max(1, processedPressure.outputPressure * brushSize);
-      const pOpacity = pressureControls === 'opacity' ? Math.max(0.02, processedPressure.outputPressure) : 1;
+      const pSize = pressureControls === PRESSURE_CONTROL.OPACITY ? brushSize : Math.max(1, processedPressure.outputPressure * brushSize);
+      const pOpacity = pressureControls === PRESSURE_CONTROL.OPACITY ? Math.max(0.02, processedPressure.outputPressure) : 1;
       drawSegment(processedCtx, lastPos, currentPos, pSize, pOpacity);
     }
 
-    const rSize = pressureControls === 'opacity' ? brushSize : Math.max(1, rawPressure * brushSize);
-    const rOpacity = pressureControls === 'opacity' ? Math.max(0.02, rawPressure) : 1;
+    const rSize = pressureControls === PRESSURE_CONTROL.OPACITY ? brushSize : Math.max(1, rawPressure * brushSize);
+    const rOpacity = pressureControls === PRESSURE_CONTROL.OPACITY ? Math.max(0.02, rawPressure) : 1;
     drawSegment(rawCtx, lastPos, currentPos, rSize, rOpacity);
 
     lastPos = currentPos;

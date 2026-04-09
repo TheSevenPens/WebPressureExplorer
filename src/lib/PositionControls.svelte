@@ -14,7 +14,6 @@
 </script>
 
 <div class="param-group">
-  <div class="param-group-title">Position Processing</div>
   <NamedSlider
     name="Position Smoothing"
     value={params.positionEmaSmoothing ?? 0}
