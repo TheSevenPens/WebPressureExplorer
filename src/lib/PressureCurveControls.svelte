@@ -6,6 +6,7 @@
   import PositionControls from './PositionControls.svelte';
   import PressureSmoothingControls from './PressureSmoothingControls.svelte';
   import PressureResponsePanel from './PressureResponsePanel.svelte';
+  import CollapsibleSection from './CollapsibleSection.svelte';
 
   export let params;
   export let defaultParams;
@@ -147,19 +148,7 @@
 
 <div id="details-panel">
   <div id="details-controls">
-    <div class="control-section">
-      <PositionControls bind:params />
-    </div>
-
-    <div class="control-section">
-      <PressureSmoothingControls bind:params />
-    </div>
-
-    <div class="control-section">
-      <div class="param-group">
-        <div class="param-group-title">Pressure Curve</div>
-      </div>
-
+    <CollapsibleSection title="Pressure Curve" open={true}>
     <div class="param">
       <div class="param-header">
         <span class="param-name">CurveType</span>
@@ -330,13 +319,17 @@
     {#if params.curveType !== CURVE_TYPE.PASSTHROUGH}
       <button id="btn-reset" on:click={resetToDefaults}>Reset curve</button>
     {/if}
-    </div>
+    </CollapsibleSection>
 
-    <div class="control-section">
-      <div class="param-group">
-        <div class="param-group-title">Presets</div>
-      </div>
+    <CollapsibleSection title="Pressure Smoothing">
+      <PressureSmoothingControls bind:params />
+    </CollapsibleSection>
 
+    <CollapsibleSection title="Position Smoothing">
+      <PositionControls bind:params />
+    </CollapsibleSection>
+
+    <CollapsibleSection title="Presets" open={false}>
       {#if pendingLoadPreset}
         <div class="preset-confirm">
           Load "{pendingLoadPreset}"? This will replace all current settings.
@@ -377,16 +370,13 @@
       {:else}
         <button type="button" class="small-action-btn" on:click={() => showSaveInput = true}>Save current as preset</button>
       {/if}
-    </div>
+    </CollapsibleSection>
 
-    <div class="control-section">
-      <div class="param-group">
-        <div class="param-group-title">Pressure Response</div>
-      </div>
+    <CollapsibleSection title="Pressure Response" open={false}>
       <PressureResponsePanel
         onDataChange={onResponseDataChange}
         onShowCurveEffectChange={onResponseShowCurveEffectChange}
       />
-    </div>
+    </CollapsibleSection>
   </div>
 </div>
