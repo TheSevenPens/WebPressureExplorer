@@ -48,6 +48,7 @@
   let drawZeroPressure = false;
   let brushSize = 40;
   let colorMode = 'black';
+  let pressureControls = 'size';
   let strokeColor = '#1a1a2e';
   let lastColorIndex = -1;
 
@@ -178,8 +179,9 @@
     }
   }
 
-  function drawSegment(ctx, from, to, size) {
+  function drawSegment(ctx, from, to, size, opacity) {
     ctx.lineWidth = size;
+    ctx.globalAlpha = opacity;
     ctx.strokeStyle = strokeColor;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -187,6 +189,7 @@
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   function updateInfo(pointerEvent, rawPressure, processedPressure) {
@@ -237,12 +240,14 @@
     const currentPos = getSmoothedPos(pointerToCanvasPos(event, sourceCanvas));
 
     if (drawZeroPressure || processedPressure.outputPressure > 0) {
-      const processedSize = Math.max(1, processedPressure.outputPressure * brushSize);
-      drawSegment(processedCtx, lastPos, currentPos, processedSize);
+      const pSize = pressureControls === 'opacity' ? brushSize : Math.max(1, processedPressure.outputPressure * brushSize);
+      const pOpacity = pressureControls === 'opacity' ? Math.max(0.02, processedPressure.outputPressure) : 1;
+      drawSegment(processedCtx, lastPos, currentPos, pSize, pOpacity);
     }
 
-    const rawSize = Math.max(1, rawPressure * brushSize);
-    drawSegment(rawCtx, lastPos, currentPos, rawSize);
+    const rSize = pressureControls === 'opacity' ? brushSize : Math.max(1, rawPressure * brushSize);
+    const rOpacity = pressureControls === 'opacity' ? Math.max(0.02, rawPressure) : 1;
+    drawSegment(rawCtx, lastPos, currentPos, rSize, rOpacity);
 
     lastPos = currentPos;
   }
@@ -305,7 +310,7 @@
 </script>
 
 <div id="draw-panel" bind:this={drawPanelEl}>
-  <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvases} {brushSize} onBrushSizeChange={(v) => brushSize = v} {colorMode} onColorModeChange={(v) => colorMode = v} />
+  <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvases} {brushSize} onBrushSizeChange={(v) => brushSize = v} {colorMode} onColorModeChange={(v) => colorMode = v} {pressureControls} onPressureControlsChange={(v) => pressureControls = v} />
 
   <div class="split-canvas-wrap">
     <div class="split-canvas-label">
