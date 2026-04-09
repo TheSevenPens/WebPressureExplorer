@@ -307,10 +307,12 @@
   }
 
   .split-canvas-label {
-    font-size: 13px;
-    color: #000;
-    padding: 2px 6px;
-    background: #f5f5f0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    padding: 4px 8px;
+    background: #e8e8e2;
+    border-bottom: 1px solid #d0d0c8;
     flex-shrink: 0;
     display: flex;
     align-items: center;
