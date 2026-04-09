@@ -76,7 +76,7 @@ body {
 #panel-left {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   padding: 12px;
   flex-shrink: 0;
   min-width: 180px;
@@ -111,7 +111,7 @@ body {
 #details-controls {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
   flex: 1;
 }
 
@@ -124,8 +124,8 @@ body {
 .control-section {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding-bottom: 4px;
+  gap: 0;
+  padding-bottom: 0;
   margin-bottom: 0;
   border-bottom: 2px solid #d0d0e0;
 }
