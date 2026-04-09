@@ -36,19 +36,25 @@ Largest component. Renders the pressure curve chart on a Canvas 2D element. Hand
 Six checkboxes controlling chart display: grid, labels, nodes, node guides, raw indicator, effective indicator. Node-related toggles are disabled when no editable curve is active.
 
 ### PressureCurveControls.svelte
-The **DetailsPanel** — curve type dropdown and conditional parameter sliders. Shows different controls depending on the active curve type:
-- **null-effect**: no controls
-- **flat**: height slider
-- **basic/sigmoid**: CurveAmount, InputMin, InputMax, OutputMin, OutputMax, min approach radio buttons
-- **bezier**: add/remove point buttons
-
-Also hosts smoothing controls and the response data panel. Provides a "Reset curve" button.
+The **DetailsPanel** — all sections are collapsible via CollapsibleSection. Contains:
+- **Pressure Curve** (expanded by default): curve type dropdown with reset button, conditional controls per type:
+  - **passthrough**: no controls
+  - **flat**: height slider
+  - **basic**: Curve Amount slider only
+  - **extended/sigmoid**: Curve Amount slider, read-only node values table (driven by chart nodes), min approach radio buttons
+  - **bezier**: preset dropdown, add/remove point buttons
+- **Pressure Smoothing**: Smoothing Amount slider, smoothing order radio buttons
+- **Position Smoothing**: Smoothing Amount slider
+- **Presets**: save (via modal dialog)/load/delete user presets via localStorage
 
 ### PositionControls.svelte / PressureSmoothingControls.svelte
-Thin wrappers around NamedSlider for position EMA and pressure EMA respectively. PressureSmoothingControls also includes a smoothing order dropdown (smooth-then-curve vs curve-then-smooth).
+Thin wrappers around NamedSlider for position and pressure smoothing respectively. PressureSmoothingControls also includes smoothing order radio buttons (smooth-then-curve vs curve-then-smooth).
 
 ### PressureResponsePanel.svelte
-Collapsible panel for loading pen hardware pressure response data. Offers three bundled Wacom KP-504E samples and a JSON file upload. Includes a "Show effect of curve" checkbox. Fires callbacks to PressureChart when data or checkbox state changes.
+Panel for loading pen hardware pressure response data. Offers a unified dropdown with three bundled Wacom KP-504E samples and an "Upload JSON..." option. Includes a "Show effect of curve" checkbox. Fires callbacks to PressureChart when data or checkbox state changes. Hosted in the curve panel's collapsible Pressure Response section.
+
+### CollapsibleSection.svelte
+Reusable section wrapper with clickable header that toggles content visibility. Used throughout DetailsPanel and the curve panel.
 
 ### PressureResponseChart.svelte
 Standalone canvas chart rendering a pen's physical pressure response (grams-force vs logical %). When "show effect of curve" is enabled, applies the current pressure curve to the Y values. Draws live indicators on the response curve matching the main chart's indicators.

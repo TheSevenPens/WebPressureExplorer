@@ -5,7 +5,6 @@
   import { MIN_APPROACH } from './uiConstants';
   import PositionControls from './PositionControls.svelte';
   import PressureSmoothingControls from './PressureSmoothingControls.svelte';
-  import PressureResponsePanel from './PressureResponsePanel.svelte';
   import CollapsibleSection from './CollapsibleSection.svelte';
 
   export let params;
@@ -17,8 +16,6 @@
   export let canRemoveBezierPoint = false;
   export let onAddBezierPoint = () => {};
   export let onRemoveBezierPoint = () => {};
-  export let onResponseDataChange = () => {};
-  export let onResponseShowCurveEffectChange = () => {};
 
   const PRESETS_STORAGE_KEY = 'wpe-user-presets';
 
@@ -149,10 +146,7 @@
 <div id="details-panel">
   <div id="details-controls">
     <CollapsibleSection title="Pressure Curve" open={true}>
-    <div class="param">
-      <div class="param-header">
-        <span class="param-name">CurveType</span>
-      </div>
+    <div class="curve-type-row">
       <select value={params.curveType} on:change={handleCurveTypeChange}>
         <option value={CURVE_TYPE.PASSTHROUGH}>Passthrough</option>
         <option value={CURVE_TYPE.FLAT}>Flat</option>
@@ -161,6 +155,9 @@
         <option value={CURVE_TYPE.SIGMOID}>Sigmoid</option>
         <option value={CURVE_TYPE.BEZIER}>Bezier</option>
       </select>
+      {#if params.curveType !== CURVE_TYPE.PASSTHROUGH}
+        <button id="btn-reset" on:click={resetToDefaults}>↺</button>
+      {/if}
     </div>
 
     {#if bezierActive}
@@ -214,7 +211,7 @@
 
     {#if curveActive}
       <NamedSlider
-        name="CurveAmount"
+        name="Curve Amount"
         value={params.softness}
         min={-0.9}
         max={0.9}
@@ -231,52 +228,14 @@
 
 
     {#if params.curveType === CURVE_TYPE.EXTENDED || params.curveType === CURVE_TYPE.SIGMOID}
-      <NamedSlider
-        name="InputMinimum"
-        value={params.inputMinimum}
-        min={0}
-        max={1}
-        step={0.01}
-        sliderMin={0}
-        sliderMax={1}
-        sliderStep={0.01}
-        valueDecimals={2}
-        valuePrecision={2}
-        defaultValue={defaultParams.inputMinimum}
-        onValueChange={(value) => handleSliderValue('inputMinimum', value)}
-      />
+      <div class="node-values-table">
+        <span class="node-label">Input Min</span><span class="node-value">{params.inputMinimum.toFixed(2)}</span>
+        <span class="node-label">Input Max</span><span class="node-value">{params.inputMaximum.toFixed(2)}</span>
+        <span class="node-label">Output Min</span><span class="node-value">{params.minimum.toFixed(2)}</span>
+        <span class="node-label">Output Max</span><span class="node-value">{params.maximum.toFixed(2)}</span>
+      </div>
 
-      <NamedSlider
-        name="InputMaximum"
-        value={params.inputMaximum}
-        min={0}
-        max={1}
-        step={0.01}
-        sliderMin={0}
-        sliderMax={1}
-        sliderStep={0.01}
-        valueDecimals={2}
-        valuePrecision={2}
-        defaultValue={defaultParams.inputMaximum}
-        onValueChange={(value) => handleSliderValue('inputMaximum', value)}
-      />
-
-      <NamedSlider
-        name="OutputMinimum"
-        value={params.minimum}
-        min={0}
-        max={1}
-        step={0.01}
-        sliderMin={0}
-        sliderMax={1}
-        sliderStep={0.01}
-        valueDecimals={2}
-        valuePrecision={2}
-        defaultValue={defaultParams.minimum}
-        onValueChange={(value) => handleSliderValue('minimum', value)}
-      />
-
-      <div class="param">
+      <div class="param inline-radio-row">
         <span class="param-name">Min approach</span>
         <label>
           <input
@@ -299,26 +258,8 @@
           Cut
         </label>
       </div>
-
-      <NamedSlider
-        name="OutputMaximum"
-        value={params.maximum}
-        min={0}
-        max={1}
-        step={0.01}
-        sliderMin={0}
-        sliderMax={1}
-        sliderStep={0.01}
-        valueDecimals={2}
-        valuePrecision={2}
-        defaultValue={defaultParams.maximum}
-        onValueChange={(value) => handleSliderValue('maximum', value)}
-      />
     {/if}
 
-    {#if params.curveType !== CURVE_TYPE.PASSTHROUGH}
-      <button id="btn-reset" on:click={resetToDefaults}>Reset curve</button>
-    {/if}
     </CollapsibleSection>
 
     <CollapsibleSection title="Pressure Smoothing">
@@ -355,28 +296,26 @@
         <div class="preset-empty">No saved presets</div>
       {/if}
 
-      {#if showSaveInput}
-        <div class="preset-save-row">
-          <input
-            type="text"
-            class="preset-name-input"
-            placeholder="Preset name"
-            bind:value={savePresetName}
-            on:keydown={(e) => { if (e.key === 'Enter') savePreset(); if (e.key === 'Escape') { showSaveInput = false; savePresetName = ''; } }}
-          />
-          <button type="button" class="small-action-btn" on:click={savePreset}>Save</button>
-          <button type="button" class="small-action-btn" on:click={() => { showSaveInput = false; savePresetName = ''; }}>Cancel</button>
-        </div>
-      {:else}
-        <button type="button" class="small-action-btn" on:click={() => showSaveInput = true}>Save current as preset</button>
-      {/if}
-    </CollapsibleSection>
+      <button type="button" class="small-action-btn" on:click={() => showSaveInput = true}>Save settings</button>
 
-    <CollapsibleSection title="Pressure Response" open={false}>
-      <PressureResponsePanel
-        onDataChange={onResponseDataChange}
-        onShowCurveEffectChange={onResponseShowCurveEffectChange}
-      />
+      {#if showSaveInput}
+        <div class="preset-dialog-overlay" on:click|self={() => { showSaveInput = false; savePresetName = ''; }}>
+          <div class="preset-dialog">
+            <div class="preset-dialog-title">Save preset</div>
+            <input
+              type="text"
+              class="preset-name-input"
+              placeholder="Preset name"
+              bind:value={savePresetName}
+              on:keydown={(e) => { if (e.key === 'Enter') savePreset(); if (e.key === 'Escape') { showSaveInput = false; savePresetName = ''; } }}
+            />
+            <div class="preset-dialog-buttons">
+              <button type="button" class="small-action-btn" on:click={savePreset}>Save</button>
+              <button type="button" class="small-action-btn" on:click={() => { showSaveInput = false; savePresetName = ''; }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      {/if}
     </CollapsibleSection>
   </div>
 </div>

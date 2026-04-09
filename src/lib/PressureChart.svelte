@@ -8,6 +8,8 @@
   import PressureChartFormat from './PressureChartFormat.svelte';
   import PressureCurveControls from './PressureCurveControls.svelte';
   import PressureResponseChart from './PressureResponseChart.svelte';
+  import PressureResponsePanel from './PressureResponsePanel.svelte';
+  import CollapsibleSection from './CollapsibleSection.svelte';
 
   const CURVE_COLOR = '#000000';
   const MIN_CONTROL_NODE_COLOR = 'rgb(255, 0, 136)';
@@ -989,28 +991,36 @@
       </div>
     </div>
 
-    <PressureChartFormat
-      bind:showGrid
-      bind:showLabels
-      bind:showNodes
-      bind:showNodeGuides
-      bind:showRawIndicator
-      bind:showEffectiveIndicator
-      {curveActive}
-      onToggle={drawCurveCanvas}
-    />
-
-    {#if pressureResponseData}
-      <PressureResponseChart
-        data={pressureResponseData}
-        {params}
-        showCurveEffect={showResponseCurveEffect}
-        {liveRawPressure}
-        {livePressure}
-        {showRawIndicator}
-        {showEffectiveIndicator}
+    <CollapsibleSection title="Chart Format">
+      <PressureChartFormat
+        bind:showGrid
+        bind:showLabels
+        bind:showNodes
+        bind:showNodeGuides
+        bind:showRawIndicator
+        bind:showEffectiveIndicator
+        {curveActive}
+        onToggle={drawCurveCanvas}
       />
-    {/if}
+    </CollapsibleSection>
+
+    <CollapsibleSection title="Pressure Response">
+      <PressureResponsePanel
+        onDataChange={onResponseDataChange}
+        onShowCurveEffectChange={onResponseShowCurveEffectChange}
+      />
+      {#if pressureResponseData}
+        <PressureResponseChart
+          data={pressureResponseData}
+          {params}
+          showCurveEffect={showResponseCurveEffect}
+          {liveRawPressure}
+          {livePressure}
+          {showRawIndicator}
+          {showEffectiveIndicator}
+        />
+      {/if}
+    </CollapsibleSection>
   </div>
 
   <PressureCurveControls
@@ -1023,7 +1033,5 @@
     {canRemoveBezierPoint}
     onAddBezierPoint={addBezierPoint}
     onRemoveBezierPoint={removeBezierPoint}
-    {onResponseDataChange}
-    {onResponseShowCurveEffectChange}
   />
 </div>

@@ -27,8 +27,14 @@
     isOpen = !isOpen;
   }
 
-  function loadSample(event) {
-    const index = parseInt(event.currentTarget.value, 10);
+  function handleSelectChange(event) {
+    const value = event.currentTarget.value;
+    if (value === 'upload') {
+      fileInputEl.click();
+      event.currentTarget.value = selectedSampleIndex;
+      return;
+    }
+    const index = parseInt(value, 10);
     selectedSampleIndex = index;
     if (isNaN(index) || index < 0) {
       clearData();
@@ -69,27 +75,15 @@
 </script>
 
 <div class="response-panel">
-  <button class="response-toggle" type="button" on:click={toggle}>
-    Load response data {isOpen ? '▴' : '▾'}
-  </button>
-
-  {#if isOpen}
     <div class="response-controls">
-      <select value={selectedSampleIndex} on:change={loadSample}>
-        <option value={-1}>— sample data —</option>
-        {#each SAMPLES as sample, i}
-          <option value={i}>{sample.label}</option>
-        {/each}
-      </select>
-
       <div class="response-row">
-        <button
-          type="button"
-          class="small-action-btn"
-          on:click={() => fileInputEl.click()}
-        >
-          Upload JSON
-        </button>
+        <select value={selectedSampleIndex} on:change={handleSelectChange}>
+          <option value={-1}>Select data</option>
+          {#each SAMPLES as sample, i}
+            <option value={i}>{sample.label}</option>
+          {/each}
+          <option value="upload">Upload JSON...</option>
+        </select>
         <input
           bind:this={fileInputEl}
           type="file"
@@ -118,21 +112,17 @@
         </div>
       {/if}
     </div>
-  {/if}
 </div>
 
 <style>
   .response-panel {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid #e0e0e8;
   }
 
   .response-toggle {
     background: none;
     border: none;
     padding: 0;
-    font-size: 11px;
+    font-size: 12px;
     color: #666;
     cursor: pointer;
     font-family: inherit;
@@ -153,7 +143,7 @@
 
   .response-controls select {
     width: 100%;
-    font-size: 11px;
+    font-size: 12px;
     padding: 2px 4px;
     font-family: inherit;
   }
@@ -165,7 +155,7 @@
   }
 
   .small-action-btn {
-    font-size: 11px;
+    font-size: 12px;
     padding: 2px 7px;
     cursor: pointer;
   }
@@ -174,7 +164,7 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 11px;
+    font-size: 12px;
     color: #444;
     cursor: pointer;
     user-select: none;
@@ -184,7 +174,7 @@
     display: flex;
     flex-direction: column;
     gap: 1px;
-    font-size: 10px;
+    font-size: 12px;
     color: #888;
     background: #f5f5f8;
     border-left: 2px solid #cc6600;

@@ -364,7 +364,7 @@
   }
 
   .split-canvas-label {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
     color: #333;
     padding: 4px 8px;
@@ -383,7 +383,7 @@
   }
 
   .canvas-export-btn {
-    font-size: 11px;
+    font-size: 12px;
     padding: 1px 8px;
     cursor: pointer;
     border: 1px solid #bbb;
@@ -396,7 +396,7 @@
   }
 
   .zero-pressure-toggle {
-    font-size: 11px;
+    font-size: 12px;
     color: #666;
     display: flex;
     align-items: center;

@@ -15,7 +15,7 @@
 
 <div class="param-group">
   <NamedSlider
-    name="Position Smoothing"
+    name="Smoothing Amount"
     value={params.positionEmaSmoothing ?? 0}
     min={0}
     max={EMA_MAX}

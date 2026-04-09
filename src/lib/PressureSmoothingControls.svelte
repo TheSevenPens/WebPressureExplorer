@@ -19,18 +19,8 @@
 </script>
 
 <div class="param-group">
-  <div class="param">
-    <div class="param-header">
-      <span class="param-name">Smoothing Order</span>
-    </div>
-    <select value={params.smoothingOrder ?? SMOOTHING_ORDER.SMOOTH_THEN_CURVE} on:change={handleOrderChange}>
-      <option value={SMOOTHING_ORDER.SMOOTH_THEN_CURVE}>Smooth then curve</option>
-      <option value={SMOOTHING_ORDER.CURVE_THEN_SMOOTH}>Curve then smooth</option>
-    </select>
-  </div>
-
   <NamedSlider
-    name="Pressure Smoothing"
+    name="Smoothing Amount"
     value={params.emaSmoothing ?? 0}
     min={0}
     max={EMA_MAX}
@@ -43,4 +33,26 @@
     valuePrecision={3}
     onValueChange={handleEmaChange}
   />
+
+  <div class="param">
+    <span class="param-name">Smoothing Order</span>
+    <label>
+      <input
+        type="radio"
+        name="smoothingOrder"
+        checked={params.smoothingOrder === SMOOTHING_ORDER.SMOOTH_THEN_CURVE}
+        on:change={() => patchParams({ smoothingOrder: SMOOTHING_ORDER.SMOOTH_THEN_CURVE })}
+      />
+      Smooth then curve
+    </label>
+    <label>
+      <input
+        type="radio"
+        name="smoothingOrder"
+        checked={params.smoothingOrder === SMOOTHING_ORDER.CURVE_THEN_SMOOTH}
+        on:change={() => patchParams({ smoothingOrder: SMOOTHING_ORDER.CURVE_THEN_SMOOTH })}
+      />
+      Curve then smooth
+    </label>
+  </div>
 </div>

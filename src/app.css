@@ -17,7 +17,7 @@ input, button, select, textarea {
 
 body {
   font-family: 'Google Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   overflow: hidden;
   height: 100vh;
   background: #e8e8ec;
@@ -45,7 +45,7 @@ body {
   background: #ffdd57;
   border-bottom: 1px solid #d4a800;
   color: #3a2e00;
-  font-size: 15px;
+  font-size: 12px;
   flex-shrink: 0;
 }
 
@@ -76,7 +76,7 @@ body {
 #panel-left {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   padding: 12px;
   flex-shrink: 0;
   min-width: 180px;
@@ -105,13 +105,13 @@ body {
   border-radius: 4px;
   display: block;
   align-self: center;
-  border: 1px solid #e0e0ea;
+  border: none;
 }
 
 #details-controls {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0;
   flex: 1;
 }
 
@@ -124,10 +124,13 @@ body {
 .control-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-bottom: 8px;
+  gap: 0;
+  padding: 2px 8px 6px;
   margin-bottom: 4px;
-  border-bottom: 2px solid #d0d0e0;
+  border: 1px solid #d0d0dc;
+  border-radius: 8px;
+  background: #fafafe;
+  overflow: hidden;
 }
 
 .param-group {
@@ -299,9 +302,40 @@ input[type="checkbox"]:disabled {
   cursor: pointer;
 }
 
+.node-values-table {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 1px 6px;
+  font-size: 12px;
+}
+
+.node-label {
+  color: #555;
+}
+
+.node-value {
+  font-family: Consolas, 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--param-value);
+}
+
+.inline-radio-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.curve-type-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 #btn-reset {
-  margin-top: 2px;
-  padding: 6px 10px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   background: #f0f0f8;
   color: #555566;
   border: 1px solid #c8c8d8;
@@ -374,7 +408,7 @@ input[type="checkbox"]:disabled {
 
 .preset-delete-btn {
   padding: 2px 6px;
-  font-size: 11px;
+  font-size: 12px;
   background: none;
   border: 1px solid #d0d0dd;
   border-radius: 4px;
@@ -388,15 +422,51 @@ input[type="checkbox"]:disabled {
 }
 
 .preset-empty {
-  font-size: 11px;
+  font-size: 12px;
   color: #999;
   padding: 2px 0;
 }
 
-.preset-save-row {
+.preset-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
-  gap: 4px;
   align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.preset-dialog {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.preset-dialog-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.preset-dialog .preset-name-input {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.preset-dialog-buttons {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
 .preset-name-input {
@@ -475,6 +545,6 @@ input[type="checkbox"]:disabled {
 
 .arrow {
   color: #999;
-  font-size: 11px;
+  font-size: 12px;
 }
 
