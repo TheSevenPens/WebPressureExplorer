@@ -13,6 +13,7 @@
     minimum: 0,
     maximum: 1,
     curveType: 'basic',
+    minApproach: 'clamp',
     transitionWidth: 0,
     flatLevel: 0.5,
     bezierPoints: [

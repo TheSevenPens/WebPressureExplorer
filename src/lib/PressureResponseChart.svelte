@@ -1,15 +1,8 @@
 <script>
   import { onMount } from 'svelte';
   import { applyPressureCurve } from './curveMath';
-
-  const PAD_LEFT = 42;
-  const PAD_BOTTOM = 32;
-  const PAD_TOP = 20;
-  const PAD_RIGHT = 20;
-  const X_LABEL_SPACING = 8;
-  const Y_LABEL_SPACING = 8;
-  const X_AXIS_LABEL_SPACING = 2;
-  const Y_AXIS_LABEL_SPACING = 7;
+  import { PAD_LEFT, PAD_TOP, PAD_RIGHT, PAD_BOTTOM } from './canvasConstants';
+  import { drawBackground, drawGrid, drawLabels, drawIndicator } from './canvasUtils';
 
   const RESPONSE_COLOR = '#000000';
 
@@ -58,64 +51,17 @@
     const records = data?.records ?? [];
     const maxGf = records.length ? Math.max(...records.map((r) => r[0])) : 1;
 
-    // Background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = '#f7f7fb';
-    ctx.fillRect(PAD_LEFT, PAD_TOP, plotW, plotH);
-
-    // Grid
-    ctx.strokeStyle = '#ebebf4';
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 4; i += 1) {
-      const gx = PAD_LEFT + (i / 4) * plotW;
-      const gy = PAD_TOP + (i / 4) * plotH;
-
-      ctx.beginPath();
-      ctx.moveTo(gx, PAD_TOP);
-      ctx.lineTo(gx, PAD_TOP + plotH);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(PAD_LEFT, gy);
-      ctx.lineTo(PAD_LEFT + plotW, gy);
-      ctx.stroke();
-    }
-
-    // Axis labels
-    ctx.fillStyle = '#000000';
-    ctx.font = '9px Consolas, monospace';
-
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    for (let i = 0; i <= 4; i += 1) {
-      const gx = PAD_LEFT + (i / 4) * plotW;
-      const gfValue = (i / 4) * maxGf;
-      const label = Number.isInteger(gfValue) ? String(gfValue) : gfValue.toFixed(1);
-      ctx.fillText(label, gx, PAD_TOP + plotH + X_LABEL_SPACING);
-    }
-
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    for (let i = 0; i <= 4; i += 1) {
-      const gy = PAD_TOP + plotH - (i / 4) * plotH;
-      const label = (i * 25).toFixed(0);
-      ctx.fillText(label, PAD_LEFT - Y_LABEL_SPACING, gy);
-    }
-
-    ctx.fillStyle = '#000000';
-    ctx.font = '9px Segoe UI, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('PHYSICAL (gf)', PAD_LEFT + plotW / 2, height - X_AXIS_LABEL_SPACING);
-
-    ctx.save();
-    ctx.translate(Y_AXIS_LABEL_SPACING, PAD_TOP + plotH / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText(showCurveEffect && params ? 'OUTPUT %' : 'LOGICAL %', 0, 0);
-    ctx.restore();
+    drawBackground(ctx, width, height, plotW, plotH);
+    drawGrid(ctx, plotW, plotH);
+    drawLabels(ctx, width, height, plotW, plotH, {
+      xAxisLabel: 'PHYSICAL (gf)',
+      yAxisLabel: showCurveEffect && params ? 'OUTPUT %' : 'LOGICAL %',
+      formatXLabel: (i) => {
+        const gfValue = (i / 4) * maxGf;
+        return Number.isInteger(gfValue) ? String(gfValue) : gfValue.toFixed(1);
+      },
+      formatYLabel: (i) => (i * 25).toFixed(0),
+    });
 
     function findCxForY(yNorm) {
       for (let i = 0; i < records.length - 1; i++) {
