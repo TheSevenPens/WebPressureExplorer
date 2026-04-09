@@ -123,9 +123,6 @@
 
 <style>
   .response-panel {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid #e0e0e8;
   }
 
   .response-toggle {

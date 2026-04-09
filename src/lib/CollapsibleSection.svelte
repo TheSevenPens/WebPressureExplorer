@@ -39,6 +39,6 @@
   .section-content {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
   }
 </style>
