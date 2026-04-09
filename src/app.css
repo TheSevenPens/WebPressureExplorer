@@ -48,20 +48,21 @@ body {
   min-width: 180px;
 }
 
-#panel-right {
+#details-panel {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  width: 190px;
+  width: 247px;
   border-left: 1px solid #e8e8f0;
   overflow-y: auto;
   scrollbar-gutter: stable;
 }
 
 .panel-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
+  text-transform: uppercase;
   color: #2255cc;
   letter-spacing: 0.5px;
 }
@@ -73,7 +74,7 @@ body {
   border: 1px solid #e0e0ea;
 }
 
-#controls {
+#details-controls {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -86,19 +87,27 @@ body {
   gap: 4px;
 }
 
+.control-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+  border-bottom: 2px solid #d0d0e0;
+}
+
 .param-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #e8e8f0;
 }
 
 .param-group-title {
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.4px;
-  color: #7a7a8a;
+  color: #333;
 }
 
 .param-header {
@@ -301,6 +310,84 @@ input[type="checkbox"]:disabled {
   cursor: not-allowed;
 }
 
+.preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.preset-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.preset-load-btn {
+  flex: 1;
+  text-align: left;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #f0f0f8;
+  border: 1px solid #d0d0dd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.preset-load-btn:hover {
+  background: #e4e4f0;
+}
+
+.preset-delete-btn {
+  padding: 2px 6px;
+  font-size: 11px;
+  background: none;
+  border: 1px solid #d0d0dd;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #999;
+}
+
+.preset-delete-btn:hover {
+  background: #f0e0e0;
+  color: #cc3333;
+}
+
+.preset-empty {
+  font-size: 11px;
+  color: #999;
+  padding: 2px 0;
+}
+
+.preset-save-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.preset-name-input {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  border: 1px solid #d0d0dd;
+  border-radius: 4px;
+}
+
+.preset-confirm {
+  font-size: 12px;
+  padding: 6px 8px;
+  background: #fff8e0;
+  border: 1px solid #e0d080;
+  border-radius: 4px;
+}
+
+.preset-confirm-buttons {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 #draw-panel {
   width: 100%;
   display: flex;
@@ -310,13 +397,12 @@ input[type="checkbox"]:disabled {
 
 #toolbar {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  gap: 4px;
   padding: 6px 12px;
   background: #f0f0f0;
   border-bottom: 1px solid #ccc;
   flex-shrink: 0;
-  flex-wrap: wrap;
 }
 
 #btn-clear {

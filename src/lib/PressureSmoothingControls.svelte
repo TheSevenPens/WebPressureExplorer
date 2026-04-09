@@ -18,7 +18,7 @@
 </script>
 
 <div class="param-group">
-  <div class="param-group-title">Input Smoothing</div>
+  <div class="param-group-title">Pressure Smoothing</div>
   <div class="param">
     <div class="param-header">
       <span class="param-name">Smoothing Order</span>
@@ -30,7 +30,7 @@
   </div>
 
   <NamedSlider
-    name="Pressure EMA"
+    name="Pressure Smoothing"
     value={params.emaSmoothing ?? 0}
     min={0}
     max={EMA_MAX}

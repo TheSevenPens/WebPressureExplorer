@@ -7,7 +7,7 @@ App.svelte (root - state owner)
   PressureChart.svelte               (left panel: curve visualization + interaction)
     PressureChartFormat.svelte       (display toggles: grid, labels, nodes, indicators)
     PressureResponseChart.svelte     (pen hardware response data chart)
-    PressureCurveControls.svelte     (curve type selector + parameter sliders)
+    PressureCurveControls.svelte     (DetailsPanel: curve type selector + parameter sliders)
       PositionControls.svelte        (position EMA smoothing)
         NamedSlider.svelte
       PressureSmoothingControls.svelte (pressure EMA + order)
@@ -36,7 +36,7 @@ Largest component. Renders the pressure curve chart on a Canvas 2D element. Hand
 Six checkboxes controlling chart display: grid, labels, nodes, node guides, raw indicator, effective indicator. Node-related toggles are disabled when no editable curve is active.
 
 ### PressureCurveControls.svelte
-Curve type dropdown and conditional parameter sliders. Shows different controls depending on the active curve type:
+The **DetailsPanel** — curve type dropdown and conditional parameter sliders. Shows different controls depending on the active curve type:
 - **null-effect**: no controls
 - **flat**: height slider
 - **basic/sigmoid**: CurveAmount, InputMin, InputMax, OutputMin, OutputMax, min approach radio buttons

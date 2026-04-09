@@ -3,7 +3,6 @@
   import { applyPressureCurve } from './curveMath';
   import DrawingCanvasHeader from './DrawingCanvasHeader.svelte';
 
-  const MAX_BRUSH_SIZE = 40;
   const CANVAS_BG = '#f5f5f0';
   const DIVIDER_HEIGHT = 1;
 
@@ -40,6 +39,8 @@
   let lastPos = null;
   let smoothedPressure = null;
   let smoothedPos = null;
+  let drawZeroPressure = false;
+  let brushSize = 40;
 
   function getSmoothedPressure(rawPressure) {
     const smoothing = Math.min(0.99, Math.max(0, Number(params.emaSmoothing ?? 0)));
@@ -212,10 +213,12 @@
 
     const currentPos = getSmoothedPos(pointerToCanvasPos(event, sourceCanvas));
 
-    const processedSize = Math.max(1, processedPressure.outputPressure * MAX_BRUSH_SIZE);
-    drawSegment(processedCtx, lastPos, currentPos, processedSize);
+    if (drawZeroPressure || processedPressure.outputPressure > 0) {
+      const processedSize = Math.max(1, processedPressure.outputPressure * brushSize);
+      drawSegment(processedCtx, lastPos, currentPos, processedSize);
+    }
 
-    const rawSize = Math.max(1, rawPressure * MAX_BRUSH_SIZE);
+    const rawSize = Math.max(1, rawPressure * brushSize);
     drawSegment(rawCtx, lastPos, currentPos, rawSize);
 
     lastPos = currentPos;
@@ -229,6 +232,24 @@
     liveRawPressure = null;
     livePressure = null;
     resetInfo();
+  }
+
+  async function copyCanvas(canvasEl) {
+    canvasEl.toBlob(async (blob) => {
+      if (!blob) return;
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+      } catch (error) {
+        console.error('Clipboard write failed:', error);
+      }
+    }, 'image/png');
+  }
+
+  function saveCanvas(canvasEl, filename) {
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = canvasEl.toDataURL('image/png');
+    link.click();
   }
 
   function onKeyDown(event) {
@@ -261,10 +282,20 @@
 </script>
 
 <div id="draw-panel" bind:this={drawPanelEl}>
-  <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvases} />
+  <DrawingCanvasHeader bind:el={toolbarEl} {info} onClear={clearDrawCanvases} {brushSize} onBrushSizeChange={(v) => brushSize = v} />
 
   <div class="split-canvas-wrap">
-    <div class="split-canvas-label">Pressure processing: ON</div>
+    <div class="split-canvas-label">
+      <span>Pressure processing: ON</span>
+      <label class="zero-pressure-toggle">
+        <input type="checkbox" bind:checked={drawZeroPressure} />
+        Draw at zero effective pressure
+      </label>
+      <span class="canvas-export-buttons">
+        <button type="button" class="canvas-export-btn" on:click={() => copyCanvas(processedCanvasEl)}>Copy</button>
+        <button type="button" class="canvas-export-btn" on:click={() => saveCanvas(processedCanvasEl, 'processed.png')}>Save</button>
+      </span>
+    </div>
     <canvas
       class="draw-canvas"
       bind:this={processedCanvasEl}
@@ -276,7 +307,13 @@
 
     <div class="split-canvas-divider"></div>
 
-    <div class="split-canvas-label">Pressure processing: OFF</div>
+    <div class="split-canvas-label">
+      <span>Pressure processing: OFF</span>
+      <span class="canvas-export-buttons">
+        <button type="button" class="canvas-export-btn" on:click={() => copyCanvas(rawCanvasEl)}>Copy</button>
+        <button type="button" class="canvas-export-btn" on:click={() => saveCanvas(rawCanvasEl, 'unprocessed.png')}>Save</button>
+      </span>
+    </div>
     <canvas
       class="draw-canvas"
       bind:this={rawCanvasEl}
@@ -298,11 +335,44 @@
   }
 
   .split-canvas-label {
-    font-size: 13px;
-    color: #000;
-    padding: 2px 6px;
-    background: #f5f5f0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    padding: 4px 8px;
+    background: #e8e8e2;
+    border-bottom: 1px solid #d0d0c8;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .canvas-export-buttons {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+  }
+
+  .canvas-export-btn {
+    font-size: 11px;
+    padding: 1px 8px;
+    cursor: pointer;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    background: #f5f5f0;
+  }
+
+  .canvas-export-btn:hover {
+    background: #ddd;
+  }
+
+  .zero-pressure-toggle {
+    font-size: 11px;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
   }
 
   .draw-canvas {

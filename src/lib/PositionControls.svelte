@@ -14,9 +14,9 @@
 </script>
 
 <div class="param-group">
-  <div class="param-group-title">Position Smoothing</div>
+  <div class="param-group-title">Position Processing</div>
   <NamedSlider
-    name="Position EMA"
+    name="Position Smoothing"
     value={params.positionEmaSmoothing ?? 0}
     min={0}
     max={EMA_MAX}

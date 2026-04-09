@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { applyPressureCurve, normalizeBezierPoints } from './curveMath';
+  import { CURVE_TYPE } from './curveTypes';
   import { PAD_LEFT, PAD_TOP, PAD_RIGHT, PAD_BOTTOM } from './canvasConstants';
   import { drawBackground, drawGrid as drawCanvasGrid, drawLabels as drawCanvasLabels, drawIndicator } from './canvasUtils';
   import PressureChartFormat from './PressureChartFormat.svelte';
@@ -60,9 +61,9 @@
   let selectedBezierHandle = null;
   let isReady = false;
 
-  $: curveActive = params.curveType === 'basic' || params.curveType === 'sigmoid';
-  $: flatActive = params.curveType === 'flat';
-  $: bezierActive = params.curveType === 'bezier';
+  $: curveActive = params.curveType === CURVE_TYPE.BASIC || params.curveType === CURVE_TYPE.EXTENDED || params.curveType === CURVE_TYPE.SIGMOID;
+  $: flatActive = params.curveType === CURVE_TYPE.FLAT;
+  $: bezierActive = params.curveType === CURVE_TYPE.BEZIER;
   $: bezierPoints = normalizeBezierPoints(params.bezierPoints);
   $: canAddBezierPoint = bezierActive && bezierPoints.length < 16;
   $: canRemoveBezierPoint = bezierActive && bezierPoints.length > 2;
@@ -411,13 +412,13 @@
     curveCtx.lineWidth = 2;
     curveCtx.lineJoin = 'round';
 
-    if (params.curveType === 'null-effect') {
+    if (params.curveType === CURVE_TYPE.PASSTHROUGH) {
       curveCtx.strokeStyle = CURVE_COLOR;
       curveCtx.beginPath();
       curveCtx.moveTo(PAD_LEFT, PAD_TOP + plotH);
       curveCtx.lineTo(PAD_LEFT + plotW, PAD_TOP);
       curveCtx.stroke();
-    } else if (params.curveType === 'flat') {
+    } else if (params.curveType === CURVE_TYPE.FLAT) {
       const fy = PAD_TOP + plotH - params.flatLevel * plotH;
       curveCtx.strokeStyle = CURVE_COLOR;
       curveCtx.beginPath();
@@ -569,7 +570,7 @@
       ];
 
       for (const node of nodes) {
-        if (!showNodes) continue;
+        if (!showNodes || params.curveType === CURVE_TYPE.BASIC) continue;
 
         if (showNodeGuides) {
           curveCtx.strokeStyle = node.guide;
@@ -641,7 +642,7 @@
       return;
     }
 
-    if (!curveActive) return;
+    if (!curveActive || params.curveType === CURVE_TYPE.BASIC) return;
     const hit = hitTestCurveNode(cssX, cssY);
     if (!hit) return;
 
@@ -764,7 +765,7 @@
         curveCanvasEl.style.cursor = 'default';
       }
     } else {
-      curveCanvasEl.style.cursor = hitTestCurveNode(cssX, cssY) ? 'move' : 'default';
+      curveCanvasEl.style.cursor = params.curveType !== CURVE_TYPE.BASIC && hitTestCurveNode(cssX, cssY) ? 'move' : 'default';
     }
   }
 

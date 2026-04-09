@@ -70,7 +70,7 @@
 
 <div class="response-panel">
   <button class="response-toggle" type="button" on:click={toggle}>
-    Pressure Response {isOpen ? '▴' : '▾'}
+    Load response data {isOpen ? '▴' : '▾'}
   </button>
 
   {#if isOpen}
