@@ -5,6 +5,9 @@
   import { createPressureProcessor, readPointerSample, clearPointerSample, EMPTY_POINTER_INFO } from './pressurePipeline';
 
   const CANVAS_BG = '#f5f5f0';
+  // PointerEvent.buttons: the tip is bit 0, the eraser end is bit 5.
+  const TIP_BUTTON_BIT = 1;
+  const ERASER_BUTTON_BIT = 32;
   const STROKE_PALETTE = [
     '#e6194b', '#3cb44b', '#4363d8', '#f58231', '#911eb4',
     '#42d4f4', '#f032e6', '#bfef45', '#fabed4', '#469990',
@@ -37,6 +40,16 @@
   const appliedBacking = new WeakMap();
   let isDrawing = false;
   let lastPos = null;
+  // Which pointer the stroke belongs to, and the canvas it started on, or null when
+  // nothing is being drawn. A tablet reports a palm resting on the glass as a second
+  // contact, and without an owner that contact is written straight into the same
+  // stroke -- a streak across the canvas to wherever the hand landed, and the stroke
+  // ending when the hand lifts.
+  let activePointerId = null;
+  let activeCanvas = null;
+  // The last pressures actually drawn with, for the closing segment. A release reports
+  // no pressure at all, and ending the stroke at zero would put a hairline on it.
+  let lastPressures = null;
   let drawZeroPressure = false;
   let strokeColor = '#1a1a2e';
   let lastColorIndex = -1;
@@ -52,6 +65,53 @@
     } while (index === lastColorIndex);
     lastColorIndex = index;
     strokeColor = STROKE_PALETTE[index];
+  }
+
+  // Whether the pen, mouse or finger is actually touching.
+  //
+  // Not the same question as "did a pointerdown arrive". A pen's barrel button sends
+  // one while the tip is still in the air, and holding that button while lifting the
+  // tip sends no pointerup -- so a stroke would begin on a button press and carry on
+  // after the pen had left the tablet. Contact is the tip, or the eraser end.
+  function isContact(pointerEvent) {
+    return (pointerEvent.buttons & (TIP_BUTTON_BIT | ERASER_BUTTON_BIT)) !== 0;
+  }
+
+  // Whether an event concerns the stroke in progress. Anything is welcome when none is
+  // running -- that is hovering, and the readouts should follow it.
+  function ownsStroke(pointerEvent) {
+    return activePointerId === null || pointerEvent.pointerId === activePointerId;
+  }
+
+  // Every position the pen reported since the last frame, rather than the single one
+  // the event carries.
+  //
+  // A pointermove is delivered about once per screen refresh however fast the tablet
+  // reports, and the rest of the readings are inside it waiting to be asked for. On a
+  // 200Hz tablet at 60Hz that is two readings in three thrown away -- readings this
+  // app exists to show the treatment of, and which the smoothing filter needs if its
+  // window is to mean what it says.
+  //
+  // An untrusted event has an empty list by definition, so anything dispatched from
+  // script falls back to the event itself.
+  function positionsIn(pointerEvent) {
+    if (typeof pointerEvent.getCoalescedEvents !== 'function') return [pointerEvent];
+
+    const merged = pointerEvent.getCoalescedEvents();
+    return merged.length > 0 ? merged : [pointerEvent];
+  }
+
+  // Forget the stroke in progress. Called wherever one can end, which is more places
+  // than a pointerup: a release, the pointer leaving, a cancellation, and Clear.
+  function resetStroke() {
+    if (activePointerId !== null && activeCanvas?.hasPointerCapture?.(activePointerId)) {
+      activeCanvas.releasePointerCapture(activePointerId);
+    }
+    isDrawing = false;
+    lastPos = null;
+    activePointerId = null;
+    activeCanvas = null;
+    lastPressures = null;
   }
 
   function pointerToCanvasPos(pointerEvent, canvasEl) {
@@ -142,7 +202,12 @@
     clearDrawCanvases();
   }
 
+  // Wipes both pictures *and* abandons the stroke in progress. Clearing only the
+  // pixels left the last position behind, so carrying on drawing struck a line across
+  // the cleared canvas from wherever the pen had been.
   function clearDrawCanvases() {
+    resetStroke();
+
     for (const [ctx, canvasEl] of [[processedCtx, processedCanvasEl], [rawCtx, rawCanvasEl]]) {
       if (!ctx || !canvasEl) continue;
       const transform = ctx.getTransform();
@@ -166,44 +231,98 @@
     ctx.globalAlpha = 1;
   }
 
-  function handlePointerDown(event, sourceCanvas) {
-    pickStrokeColor();
-    isDrawing = true;
-    lastPos = pointerToCanvasPos(event, sourceCanvas);
-    let processedPressure;
-    ({ liveRawPressure, livePressure, liveOutputPressure, info, processed: processedPressure } =
-      readPointerSample(processor, event, params));
-
-    if (sourceCanvas?.setPointerCapture) {
-      sourceCanvas.setPointerCapture(event.pointerId);
-    }
-  }
-
-  function handlePointerMove(event, sourceCanvas) {
-    let processedPressure;
-    ({ liveRawPressure, livePressure, liveOutputPressure, info, processed: processedPressure } =
-      readPointerSample(processor, event, params));
-
-    if (!isDrawing) return;
-
-    const currentPos = pointerToCanvasPos(event, sourceCanvas);
-
-    if (drawZeroPressure || processedPressure.outputPressure > 0) {
-      const pSize = pressureControls === PRESSURE_CONTROL.OPACITY ? brushSize : Math.max(1, processedPressure.outputPressure * brushSize);
-      const pOpacity = pressureControls === PRESSURE_CONTROL.OPACITY ? Math.max(0.02, processedPressure.outputPressure) : 1;
+  // One step of the stroke, on both canvases: the processed pressure on one and the
+  // raw pressure on the other, which is the comparison this whole app is for.
+  //
+  // From wherever the ink last reached to `currentPos`, so a step of no distance is a
+  // dot -- the line cap is round, which is what lets a tap leave a mark.
+  function paintTo(currentPos, outputPressure, rawPressure) {
+    if (drawZeroPressure || outputPressure > 0) {
+      const pSize = pressureControls === PRESSURE_CONTROL.OPACITY ? brushSize : Math.max(1, outputPressure * brushSize);
+      const pOpacity = pressureControls === PRESSURE_CONTROL.OPACITY ? Math.max(0.02, outputPressure) : 1;
       drawSegment(processedCtx, lastPos, currentPos, pSize, pOpacity);
     }
 
-    const rSize = pressureControls === PRESSURE_CONTROL.OPACITY ? brushSize : Math.max(1, liveRawPressure * brushSize);
-    const rOpacity = pressureControls === PRESSURE_CONTROL.OPACITY ? Math.max(0.02, liveRawPressure) : 1;
+    const rSize = pressureControls === PRESSURE_CONTROL.OPACITY ? brushSize : Math.max(1, rawPressure * brushSize);
+    const rOpacity = pressureControls === PRESSURE_CONTROL.OPACITY ? Math.max(0.02, rawPressure) : 1;
     drawSegment(rawCtx, lastPos, currentPos, rSize, rOpacity);
 
     lastPos = currentPos;
+    lastPressures = { output: outputPressure, raw: rawPressure };
   }
 
-  function stopDrawing() {
-    isDrawing = false;
-    lastPos = null;
+  function handlePointerDown(event, sourceCanvas) {
+    // A contact arriving while another is already drawing is a palm, a second finger,
+    // or the pen touching the other canvas. The stroke keeps the pointer it started
+    // with.
+    if (!ownsStroke(event)) return;
+
+    const sample = readPointerSample(processor, event, params);
+    ({ liveRawPressure, livePressure, liveOutputPressure, info } = sample);
+
+    // A barrel button in mid-air also sends a pointerdown. Only contact draws.
+    if (!isContact(event)) return;
+
+    resetStroke();
+    pickStrokeColor();
+    isDrawing = true;
+    activePointerId = event.pointerId;
+    activeCanvas = sourceCanvas;
+    lastPos = pointerToCanvasPos(event, sourceCanvas);
+
+    if (sourceCanvas?.setPointerCapture) {
+      try {
+        sourceCanvas.setPointerCapture(event.pointerId);
+      } catch {
+        // No capture available. The stroke still works; it just ends at the edge.
+      }
+    }
+
+    // Mark the point of contact, so that a tap leaves something behind. Without it a
+    // press and release with no movement drew nothing at all, on either canvas, and
+    // tapping is the first thing anyone does to check a pen works.
+    paintTo(lastPos, sample.processed.outputPressure, sample.liveRawPressure);
+  }
+
+  function handlePointerMove(event, sourceCanvas) {
+    if (!ownsStroke(event)) return;
+
+    // Contact can end without a pointerup: lifting the tip while the barrel button is
+    // still held sends a move with the button bit and no contact bit.
+    if (isDrawing && !isContact(event)) {
+      stopDrawing(event);
+      return;
+    }
+
+    // While a stroke is running the positions belong to the canvas it started on, even
+    // if capture is delivering the events from somewhere else.
+    const canvasEl = activeCanvas ?? sourceCanvas;
+
+    for (const position of positionsIn(event)) {
+      const sample = readPointerSample(processor, position, params);
+      ({ liveRawPressure, livePressure, liveOutputPressure, info } = sample);
+
+      if (!isDrawing) continue;
+
+      paintTo(pointerToCanvasPos(position, canvasEl), sample.processed.outputPressure, sample.liveRawPressure);
+    }
+  }
+
+  function stopDrawing(event) {
+    if (event && !ownsStroke(event)) return;
+
+    // Finish at the position the pen was actually lifted from. The release was being
+    // discarded, so the ink stopped at the last move -- short of where the pen left,
+    // by however far it travelled in the last frame.
+    //
+    // At the pressures of the last reading that had any, because a released pointer
+    // reports none: drawn at zero the closing segment would be a hairline on the end
+    // of the stroke rather than a finish to it.
+    if (isDrawing && event && lastPos && lastPressures && activeCanvas) {
+      paintTo(pointerToCanvasPos(event, activeCanvas), lastPressures.output, lastPressures.raw);
+    }
+
+    resetStroke();
     ({ liveRawPressure, livePressure, liveOutputPressure, info } =
       clearPointerSample(processor));
   }
@@ -294,6 +413,7 @@
       on:pointerdown={(e) => handlePointerDown(e, processedCanvasEl)}
       on:pointermove={(e) => handlePointerMove(e, processedCanvasEl)}
       on:pointerup={stopDrawing}
+      on:pointercancel={stopDrawing}
       on:pointerleave={stopDrawing}
     ></canvas>
 
@@ -312,6 +432,7 @@
       on:pointerdown={(e) => handlePointerDown(e, rawCanvasEl)}
       on:pointermove={(e) => handlePointerMove(e, rawCanvasEl)}
       on:pointerup={stopDrawing}
+      on:pointercancel={stopDrawing}
       on:pointerleave={stopDrawing}
     ></canvas>
   </div>

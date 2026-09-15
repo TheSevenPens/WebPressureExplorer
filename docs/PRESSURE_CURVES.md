@@ -200,6 +200,12 @@ The order defaults to smooth-then-curve.
 Only pressure is smoothed. Pointer coordinates are used exactly as the pointer
 event delivers them.
 
+The filter runs once per reported sample, not once per pointer event: a `pointermove`
+carries every reading the browser merged since the last screen refresh, and each is put
+through the pipeline in order. On a tablet reporting at 200Hz on a 60Hz display that is
+about 200 passes a second rather than 60, so an EMA window counted in samples covers
+the time it appears to.
+
 Smoothing has two types, selected in the Smoothing card. **Passthrough** skips
 the stage entirely. **EMA** applies the exponential moving average below.
 

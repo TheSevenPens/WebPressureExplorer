@@ -211,9 +211,17 @@ Components update params via `patchParams({ key: value })` which spreads into a 
 The component wiring is above; this is what happens to a pointer event. Only the
 active view produces these, since the hidden one receives no events.
 
+A `pointermove` is delivered about once per screen refresh however fast the tablet
+reports, with the readings it merged available from `getCoalescedEvents()`.
+DrawingCanvas walks that batch and runs every sample through the pipeline, so on a
+200Hz tablet at 60Hz the smoothing filter sees around 200 readings a second rather
+than 60 -- which is what makes its window mean what it says. The readouts and the
+live indicators show the last sample of the batch, being the most recent.
+
 ```
 pointer event on the active view
   (DrawingCanvas or PressureResponseView)
+   [each coalesced sample, in order]
         |
         v
   processor.process(rawPressure, params)      [pressurePipeline.js]
@@ -296,6 +304,22 @@ Output pressure (0-1) --> brush size or opacity
 ```
 
 Pointer coordinates are used as delivered by the event; there is no position smoothing.
+
+### What counts as drawing
+
+A stroke belongs to the pointer that started it and to the canvas it started on: a
+second contact -- a palm, another finger, the pen touching the other canvas -- is
+ignored until that stroke ends, and cannot end it either. Contact is the tip or the
+eraser end (`buttons` bits 0 and 5), not merely the arrival of a `pointerdown`, since a
+barrel button in mid-air sends one of those too and holding it while lifting the tip
+sends no `pointerup`. A stroke ends on a release, a cancellation, the pointer leaving,
+losing contact, or Clear -- which drops the stroke as well as the pixels, so carrying
+on afterwards does not strike a line across from wherever the pen had been.
+
+Contact and release both mark the canvas: pressing and lifting without moving leaves a
+dot, and the closing segment runs to the position the pen was actually lifted from. A
+release reports no pressure, so that last segment is drawn at the last pressure that
+had one.
 
 ## Pressure response data schema
 
